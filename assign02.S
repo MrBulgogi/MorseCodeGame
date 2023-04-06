@@ -45,6 +45,8 @@ main_asm:
 
 Homescreen:
     bl      homescreen
+    wfi
+    b       Homescreen   
 
 Level1:
 
@@ -56,9 +58,12 @@ Level4:
 
 ResetGame:
 
-main_loop:
-    wfi                                                 @waiting for an interupt 
-    b       main_loop                                   @return to start of loop
+GameFinished:
+
+GameOver:
+
+
+
 
 
 
@@ -184,7 +189,7 @@ gpio_isr:
 
 gpiofall:
     ldr     r2, =(IO_BANK0_BASE + IO_BANK0_INTR2_OFFSET)            @disables pending interupt by writing falling edge value to raw offset     
-    ldr     r1, =#GPIO_BTN_UP_MSK                                   
+    ldr     r1, =#GPIO_BTN_FALL_MSK                                   
     str     r1,[r2]  
     ldr     r2, =(TIMER_BASE + TIMER_TIMELR_OFFSET)
     ldr     r1, [r2]
@@ -204,7 +209,7 @@ enter:
 
 gpiorise:
     ldr     r2, =(IO_BANK0_BASE + IO_BANK0_INTR2_OFFSET)            @disables pending interupt by writing falling edge value to raw offset     
-    ldr     r1, =#GPIO_BTN_UP_MSK                                   
+    ldr     r1, =#GPIO_BTN_RISE_MSK                                   
     str     r1,[r2]  
     ldr     r2, =(TIMER_BASE + TIMER_TIMELR_OFFSET) 
     ldr     r1, [r2]

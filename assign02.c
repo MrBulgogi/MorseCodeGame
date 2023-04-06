@@ -28,80 +28,119 @@ void asm_gpio_put(uint pin, bool value) {
 // Enable falling-edge interrupt – see SDK for detail on gpio_set_irq_enabled()
 void asm_gpio_set_irq(uint pin) {
     gpio_set_irq_enabled(pin, GPIO_IRQ_EDGE_FALL, true);
-}
-
-void asm_gpio_set_irq2(uint pin) {
     gpio_set_irq_enabled(pin, GPIO_IRQ_EDGE_RISE, true);
 }
 
-void morsematching(){
-    
+char answer[50];
+int  i = 0;
+bool rightorwrong;
 
-    OUPUT =
-}
-
-void printuser(){
-    morsematching();
-    printf("\33[2K\r")
-    printf("%s | %s", OUPUT, INPUT)
-}
-void stringadd(msg){
-    if(msg == "dot"){
-        strcat(INPUT, ".");
-        printuser();
+void addtoanswer(int input){
+    if (input == 46){
+        answer[i] = '.';
+        i++;
+        printinput();
     }
-    else if(msg = "dash"){
-        strcat(INPUT, "-");
-        printuser();
+    else if (input == 45){
+        answer[i] = '-';
+        i++;
+        printinput();
     }
-    else if(msg = "space"){
-        strcat(INPUT, " ");
-        printuser();
+    else if (input == 32){
+        answer[i] = ' ';
+        i++;
+        printinput();
     }
-    else if(msg == "enter"){
-        strcpy(INPUT, "");
-        printuser();
+    else if (input == 64){
+        answer[i] = 'e';
+        printinput();
+        stringcomparison(answer, question);
     }
-}
-
-void stringadd(msg){
-    if(msg == "dot"){
-        strcat(INPUT, ".");
-    }
-    else if(msg = "dash"){
-        strcat(INPUT, "-");
-    }
-    else if(msg = "space"){
-        strcat(INPUT, " ");
-    }
-    else if(msg == "enter"){
-        strcpy(INPUT, "");
+    else {
+        answer[i] = '?';
+        printinput();
     }
 }
 
-bool entermorse(){
-    return True;
-}
 void watchdog(){
-    
 }
 
 void homescreen(){
-    FILE *fptr;  
-    fptr = fopen("ascii_art.txt", "r"); 
-    printf("%c", fgetc(fptr));
-    printf("Enter Morse To Start Level\n< . - - - - > | Level 01 | Chars | EASY\n< . . - - - > | Level 02 | Chars | HARD\n< . . . - - > | Level 03 | Words | EASY\n< . . . . - > | Level 04 | Words | HARD\n\n");  // Basic print to console
+    system("clear");
+    printf(" ______________________ \n");
+    printf("|\\ __________________ /| \n");
+    printf("| |  ╔╦╗╔═╗╦═╗╔═╗╔═╗ | | \n");
+    printf("| |  ║║║║ ║╠╦╝╚═╗║╣  | | \n");
+    printf("| |  ╩ ╩╚═╝╩╚═╚═╝╚═╝ | | \n");
+    printf("| |  ╔═╗╔═╗╔╦╗╔═╗    | | \n");
+    printf("| |  ║  ║ ║ ║║║╣     | | \n");
+    printf("| |  ╚═╝╚═╝═╩╝╚═╝    | | \n");
+    printf("| |  ╔═╗╔═╗╔╦╗╔═╗    | | \n");
+    printf("| |  ║ ╦╠═╣║║║║╣     | | \n");
+    printf("| |  ╚═╝╩ ╩╩ ╩╚═╝    | | \n");
+    printf("| |__________________| | \n");
+    printf("|/____________________\\| \n");
+    printf("Enter Morse To Start Level\n<.----> | Level 01 | Chars | EASY\n<..---> | Level 02 | Chars | HARD\n<...--> | Level 03 | Words | EASY\n<....-> | Level 04 | Words | HARD\n\n");  // Basic print to console
 }
 
-void homescreenclr(){
-    clrscr();
+void timeoutscreen(){
+    system("clear");
+    printf(" ______________________ \n");
+    printf("|\\ __________________ /| \n");
+    printf("| |  ╔╦╗╦╔╦╗╔═╗╔╦╗   | | \n");
+    printf("| |   ║ ║║║║║╣  ║║   | | \n");
+    printf("| |   ╩ ╩╩ ╩╚═╝═╩╝   | | \n");
+    printf("| |  ╔═╗╦ ╦╔╦╗   //  | | \n");
+    printf("| |  ║ ║║ ║ ║   //   | | \n");
+    printf("| |  ╚═╝╚═╝ ╩  //    | | \n");
+    printf("| |  ╦ ╦╦═╗╔═╗╔╗╔╔═╗ | | \n");
+    printf("| |  ║║║╠╦╝║ ║║║║║ ╦ | | \n");
+    printf("| |  ╚╩╝╩╚═╚═╝╝╚╝╚═╝ | | \n");
+    printf("| |__________________| | \n");
+    printf("|/____________________\\| \n");
 }
 
+void printinput(){
+    system("clear");
+    printf("%s, %s", answer, converted);
+}
+
+
+void chooselevel(){
+    if (answer == ".----"){
+        level1();
+    }
+    else if (answer == "..---"){
+        level2();
+    }
+    else if (answer == "...--"){
+        level3();
+    }
+    else if (answer == "....-"){
+        level4();
+    }
+    else {
+        timeoutscreen();
+        sleep_ms(5000);
+        mainscreen();
+    }
+}
+
+
+
+void stringcomparison(char input[], char question[]){
+    if (input == question){
+        rightinput();
+    }
+    else {
+        wronginput();
+    }
+}
 
 // Main entry point of the application
 int main() {
     stdio_init_all();
-    char[20] INPUT = "";
-    char[1] OUTPUT = "";
+    sleep_ms(5000);
+    main_asm(); 
     return 0;                      // Application return code
 }
