@@ -15,15 +15,25 @@
 #define MAX_STRING 30
 
 int lives;
-int count; // count will be incremented/decremented if a player gets the correct answer
+int correctInARow; // count will be incremented/decremented if a player gets the correct answer
+
+char answer[50];
+char finalanswer[50];
+char correctAnswer[50];
 
 char *translate(char c);
-void checkEntry(char C, char *string, int lives);
-char *level1();
-char *level2();
-char *level3();
-char *level4();
+void level1Header();
+void level2Header();
+void level3Header();
+void level4Header();
+void level1();
+void level2();
+void level3();
+void level4();
 void setLED(int lives);
+int compareAnswer();
+void clearAnswer();
+
 /**
  * @brief Wrapper function used to call the underlying PIO
  *        function that pushes the 32-bit RGB colour value
@@ -100,32 +110,29 @@ char alphabet[ARRAY_SIZE] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', '
 
 char words[][20] = {"HELLO", "WORLD", "MORSE", "CODE", "MICRO", "COMP", "PICO", "WATER", "BREAD", "BOARD", "CAR", "COPY", "PASTE"};
 
-char *level1()
+void level1()
 {
-    printf("\nLEVEL 1\n-------\nIn this level your task is to enter the morse code corresponding to the given character\n");
-    printf("You are given both a character and the morse equivalent below \n");
     int random = rand() % (ARRAY_SIZE - 1);
     char c = alphabet[random];
     char *s = translate(c);
     printf("\nCharacter: %c\n", c);
     printf("Morse equivalent of %c: %s \n", c, s);
-    return s;
+    strcpy(correctAnswer, s);
+    correctAnswer[strlen(s)] = '\0';
 }
 
-char *level2()
+void level2()
 {
-    printf("\nLEVEL 2\n-------\nIn this level your task is to enter the morse code corresponding to the given character\n");
     int random = rand() % (ARRAY_SIZE - 1);
     char c = alphabet[random];
     char *s = translate(c);
     printf("\nCharacter: %c\n", c);
-    return s;
+    strcpy(correctAnswer, s);
+    correctAnswer[strlen(s)] = '\0';
 }
 
-char *level3()
+void level3()
 {
-    printf("\nLEVEL 3\n-------\nIn this level your task is to enter the morse code corresponding to the given word\n");
-    printf("You are given both a word and the morse equivalent below \n");
     int random = rand() % (12);
     char *s = words[random];
     char *morse;
@@ -156,13 +163,13 @@ char *level3()
 
     printf("\nWord: %s\n", s);
     printf("Morse equivalent of %s: %s \n", s, newTrans);
-    return newTrans;
+    strcpy(correctAnswer, newTrans);
+    correctAnswer[strlen(newTrans)] = '\0';
 }
 
-char *level4()
+void level4()
 {
-    printf("\nLEVEL 4\n-------\nIn this level your task is to enter the morse code corresponding to the given word\n");
-    int random = rand() % (12);
+    int random = rand() % (13);
     char *s = words[random];
     char *morse;
     char *trans = malloc(sizeof(char) * (MAX_STRING));
@@ -191,7 +198,8 @@ char *level4()
     newTrans[strlen(trans) - 1] = '\0';
 
     printf("\nWord: %s\n", s);
-    return newTrans;
+    strcpy(correctAnswer, newTrans);
+    correctAnswer[strlen(newTrans)] = '\0';
 }
 
 void setLED(int lives)
@@ -267,29 +275,89 @@ char *translate(char C)
     }
 }
 
-void checkEntry(char C, char *string, int lives)
+// CHECK ANSWER
+// checks if the users answer is correct
+// controls correctInARow and lives
+
+// returns 1 if lives == 0
+// returns 2 to move to level 2
+// returns 3 to move to level 3
+// returns 4 ro move to level 4
+// returns 5 to loop
+int compareAnswer()
 {
-    char *morse = translate(C);
-    if (C == 'A')
+    if (strcmp(correctAnswer, finalanswer) == 0)
     {
-        if (strcmp(morse, ".-") == 0)
+        printf("\nCorrect!\n");
+        correctInARow++;
+        if (lives < 3)
         {
-            printf("CORRECT!\n");
-            if (lives < 3)
-            {
-                lives++;
-            }
-        }
-        else
-        {
-            printf("INCOORECT\n");
-            if (lives > 0)
-            {
-                lives--;
-            }
+            lives++;
         }
     }
-    printf("You have %d lives left!\n", lives);
+    else
+    {
+        printf("\nIncorrect!\n");
+        correctInARow = 0;
+        lives--;
+    }
+    printf("\nLives = %d", lives);
+
+    if (lives == 0)
+    {
+        printf("\nYou have run out of lives\nGAMEOVER");
+        return 1;
+    }
+
+    if (correctInARow == 5)
+    {
+        return 2;
+    }
+
+    if (correctInARow == 10)
+    {
+        return 3;
+    }
+
+    if (correctInARow == 15)
+    {
+        return 4;
+    }
+
+    setLED(lives);
+
+    return 5;
+}
+
+void clearAnswer()
+{
+    answer[0] = '\0';
+    finalanswer[0] = '\0';
+    correctAnswer[0] = '\0';
+}
+
+void level1Header()
+{
+    printf("\nLEVEL 1\n-------\nIn this level your task is to enter the morse code corresponding to the given character\n");
+    printf("You are given both a character and the morse equivalent below \n");
+}
+
+void level2Header()
+{
+    printf("\nLEVEL 2\n-------\nIn this level your task is to enter the morse code corresponding to the given character\n");
+    printf("You are given a character below \n");
+}
+
+void level3Header()
+{
+    printf("\nLEVEL 3\n-------\nIn this level your task is to enter the morse code corresponding to the given word\n");
+    printf("You are given both a word and the morse equivalent below \n");
+}
+
+void level4Header()
+{
+    printf("\nLEVEL 4\n-------\nIn this level your task is to enter the morse code corresponding to the given word\n");
+    printf("You are given a word below \n");
 }
 
 /*
@@ -297,33 +365,76 @@ void checkEntry(char C, char *string, int lives)
  */
 int main()
 {
-    stdio_init_all();
-    // main_asm();
-    //  Initialise the PIO interface with the WS2812 code
-    PIO pio = pio0;
-    uint offset = pio_add_program(pio, &ws2812_program);
-    ws2812_program_init(pio, 0, offset, WS2812_PIN, 800000, IS_RGBW);
-    printf("\n-------------------------\n");
-    printf("\n-------------------------\n");
-    printf("\n-------------------------\n");
-    level1();
-    level2();
-    level3();
-    level4();
-    printf("\n-------------------------\n");
-    printf("\n-------------------------\n");
-    printf("\n-------------------------\n");
+    printf("Hello World");
+    lives = 3;
+    // stdio_init_all();
+    // // main_asm();
+    // //  Initialise the PIO interface with the WS2812 code
+    // PIO pio = pio0;
+    // uint offset = pio_add_program(pio, &ws2812_program);
+    // ws2812_program_init(pio, 0, offset, WS2812_PIN, 800000, IS_RGBW);
+    // printf("\n-------------------------\n");
+    // printf("\n-------------------------\n");
+    // printf("\n-------------------------\n");
+    // level1();
+    // level2();
+    // level3();
+    // level4();
+    // printf("\n-------------------------\n");
+    // printf("\n-------------------------\n");
+    // printf("\n-------------------------\n");
 
-    while (true)
-    {
-        setLED(0);
-        sleep_ms(500);
-        setLED(1);
-        sleep_ms(500);
-        setLED(2);
-        sleep_ms(500);
-        setLED(3);
-        sleep_ms(500);
-    }
+    // while (true)
+    // {
+    //     setLED(0);
+    //     sleep_ms(500);
+    //     setLED(1);
+    //     sleep_ms(500);
+    //     setLED(2);
+    //     sleep_ms(500);
+    //     setLED(3);
+    //     sleep_ms(500);
+    // }
+
+    //=================================================================================
+    // check compare function and see it increment/decrement lives and count
+
+    // char correctAns[] = "----.";
+    // char correctInput[] = "----.";
+    // char input1[] = "--.-";
+    // char input2[] = "-..-";
+    // char input3[] = ".-.-";
+    // char input4[] = "----";
+    // compareAnswer(correctAns, correctInput);
+    // compareAnswer(correctAns, input1);
+    // compareAnswer(correctAns, input2);
+    // compareAnswer(correctAns, correctInput);
+    // compareAnswer(correctAns, input3);
+    // compareAnswer(correctAns, input4);
+    //==================================================================================
+    clearAnswer();
+    level1Header();
+    char eight[] = "---..";
+    level1();
+    strcpy(finalanswer, eight);
+    compareAnswer();
+    clearAnswer();
+
     return 0;
 }
+
+// arm loop->
+// level1
+//     print level header
+// level1loop
+//     print character
+//     user input
+//     compare
+//     if compare == 1 bl gameover
+//     if compare == 2 bl level2
+//     if compare == 3 bl level3
+//     if compare == 4 bl level4
+//     bl level 1 loop
+
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
