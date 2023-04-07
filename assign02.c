@@ -1,9 +1,25 @@
 #include <stdio.h>
+#include <string.h>
 #include "pico/stdlib.h"
 #include "hardware/gpio.h"
+#define NUM_PIXELS 1  // There is 1 WS2812 device in the chain
+#define WS2812_PIN 28 // The GPIO pin that the WS2812 connected
+#define ARRAY_SIZE 38
+#define MAX_STRING 30
+
 
 // Declare the main assembly code entry point.
 void main_asm();
+void outputChar();
+void checkEntry(char C, char *string, int lives);
+char *level1();
+char *level2();
+char *level3();
+char *level4();
+void setLED(int lives);
+void addtoanswer(char input);
+
+
 
 // Initialise a GPIO pin – see SDK for detail on gpio_init()
 void asm_gpio_init(uint pin) {
@@ -32,41 +48,79 @@ void asm_gpio_set_irq(uint pin) {
 }
 
 char answer[50];
+char finalanswer[];
 int  i = 0;
 bool rightorwrong;
+int lives;
+int count; // count will be incremented/decremented if a player gets the correct answer
+
+char *translate(char c);
+
+void checkEntry(char C, char *string, int lives)
+{
+    char *morse = translate(C);
+    if (C == 'A')
+    {
+        if (strcmp(morse, ".-") == 0)
+        {
+            printf("CORRECT!\n");
+            if (lives < 3)
+            {
+                lives++;
+            }
+        }
+        else
+        {
+            printf("INCOORECT\n");
+            if (lives > 0)
+            {
+                lives--;
+            }
+        }
+    }
+    printf("You have %d lives left!\n", lives);
+}
+
+
+void printinput(){
+    printf("\n%s", answer);
+}
+
 
 void addtoanswer(int input){
     if (input == 46){
+        printinput(); 
         answer[i] = '.';
         i++;
-        printinput();
     }
     else if (input == 45){
+        printinput();
         answer[i] = '-';
         i++;
-        printinput();
     }
-    else if (input == 32){
+    else if (input == 43){
+        printinput();
         answer[i] = ' ';
         i++;
-        printinput();
     }
-    else if (input == 64){
-        answer[i] = 'e';
+    else if (input == 32){
         printinput();
-        stringcomparison(answer, question);
-    }
-    else {
-        answer[i] = '?';
-        printinput();
+        answer[i] = ' ';
+        answer[i+1] = ' ';
+        answer[i+2] = ' ';
+        i += 3;
     }
 }
+
+void userenter(char answer[]){
+    finalanswer[] = morsecoverter(answer);
+}
+
 
 void watchdog(){
 }
 
 void homescreen(){
-    system("clear");
     printf(" ______________________ \n");
     printf("|\\ __________________ /| \n");
     printf("| |  ╔╦╗╔═╗╦═╗╔═╗╔═╗ | | \n");
@@ -80,11 +134,36 @@ void homescreen(){
     printf("| |  ╚═╝╩ ╩╩ ╩╚═╝    | | \n");
     printf("| |__________________| | \n");
     printf("|/____________________\\| \n");
-    printf("Enter Morse To Start Level\n<.----> | Level 01 | Chars | EASY\n<..---> | Level 02 | Chars | HARD\n<...--> | Level 03 | Words | EASY\n<....-> | Level 04 | Words | HARD\n\n");  // Basic print to console
+    printf("Enter Morse To Start Level\n<. - - - -> | Level 01 | Chars | EASY\n<. . - - -> | Level 02 | Chars | HARD\n<. . . - -> | Level 03 | Words | EASY\n<. . . . -> | Level 04 | Words | HARD\n\n");  // Basic print to console
+    
+}
+
+void level0(){
+    char level1[] = "1";
+    char level2[] = "2";
+    char level3[] = "3";
+    char level4[] = "4";
+    if (strcmp(answer[], level1[])=0){
+        printf("begin level 1");
+    }
+
+    else if (answer == level2){
+        printf("begin level 2");
+    }
+
+    else if (answer == level3){
+        printf("begin level 3");
+    }
+
+    else if (answer == level4){
+        printf("begin level 4");
+    }
+    else {
+        timeoutscreen();
+    }
 }
 
 void timeoutscreen(){
-    system("clear");
     printf(" ______________________ \n");
     printf("|\\ __________________ /| \n");
     printf("| |  ╔╦╗╦╔╦╗╔═╗╔╦╗   | | \n");
@@ -100,13 +179,9 @@ void timeoutscreen(){
     printf("|/____________________\\| \n");
 }
 
-void printinput(){
-    system("clear");
-    printf("%s, %s", answer, converted);
-}
 
 
-void chooselevel(){
+/*void chooselevel(){
     if (answer == ".----"){
         level1();
     }
@@ -135,7 +210,7 @@ void stringcomparison(char input[], char question[]){
     else {
         wronginput();
     }
-}
+}*/
 
 // Main entry point of the application
 int main() {

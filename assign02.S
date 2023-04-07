@@ -26,10 +26,10 @@
 .equ    LED_VAL_ON,    1              @ Specify value that turns the LED "on"
 .equ    LED_VAL_OFF,   0              @ Specify value that turns the LED "off"
 
-.equ    DOT_TIME,    1000000              @ Specify value that should display dot
+.equ    DOT_TIME,    1000000             @ Specify value that should display dot
 .equ    DASH_TIME,   3000000            @ Specify value that should display dash
-.equ    EMPTY_TIME,  1000000              @ Specify value that should display spoace
-.equ    ENTER_TIME,  1000000              @ Specify value that should check code
+.equ    EMPTY_TIME,  1000000          @ Specify value that should display spoace
+.equ    ENTER_TIME,  2000000           @ Specify value that should check code
 
 
 .equ    GPIO_ISR_OFFSET, 0x74         @ GPIO is int #13 (vector table entry 29)
@@ -41,13 +41,12 @@ main_asm:
     bl      init_gpio_en                         @Install the SVC interrupt service routine
     bl      install_alrm_isr
     bl      install_gpio_isr
-    bl      install_watchdog_isr
-
 Homescreen:
     bl      homescreen
-    wfi
-    b       Homescreen   
-
+ChooseLevel:
+    bl      addtoanswer
+    
+    b       ChooseLevel  
 Level1:
 
 Level2:
@@ -89,22 +88,22 @@ init_gpio_en:
     bl      asm_gpio_set_dir                            
     movs    r0, #GPIO_BTN_EN
     bl      asm_gpio_set_irq
-    bl      asm_gpio_set_irq2
     pop     {pc}
 
-install_watchdog_isr:
-    ldr     r2, =(PPB_BASE + M0PLUS_VTOR_OFFSET)        @Similar to the alarm_isr, it initialises the interupt disable and enables for GPIO buttons
-    ldr     r1, [r2]                                    
-    movs    r2, #WATCHDOG_ISR_OFFSET                        
-    adds    r1, r2                                      
-    ldr     r0, =gpio_isr                               
-    str     r0, [r1]                                    
-    ldr     r2, =(WATCHDOG_BASE + WATCHDOG_LOAD_OFFSET)      
-    ldr     r1, =#0xffffff     
-    movs    r2, #           
-    str     r1, [r2]         
-    bx      lr                        
-
+alarm:
+    push    {lr}                                        @pushes return address to stack
+    ldr     r2, =(TIMER_BASE + TIMER_TIMELR_OFFSET)     @loads timer component adress and 32 bitoffset adress into r2 
+    ldr     r1, [r2]
+    ldr     r2, =ltimer                                 @loads timing into r2
+    ldr     r0, [r2]
+    add     r1, r0                                      @adds the timing to the two address values
+    ldr     r2, =(TIMER_BASE + TIMER_ALARM0_OFFSET)     @laods offset for alarm control register
+    str     r1, [r2]                                    @ stores added value into register
+    
+    ldr     r2, =(TIMER_BASE + TIMER_INTE_OFFSET)       @loads offset of interupt enable
+    ldr     r1, =#0x1
+    str     r1, [r2]                                    @storing the correct value into the interupt register
+    pop     {pc}
 
 install_alrm_isr:
     ldr     r2, =(PPB_BASE + M0PLUS_VTOR_OFFSET)        @loads rp2040 component adress and vector adress into r2 
@@ -129,23 +128,7 @@ alrm_isr:
     ldr     r1, =#0x1                                   @ <TODO – add comment>
     str     r1, [r2]                                    @ storing the correct value into the register to disable interupt
     ldr     r1, =lstate                                 
-    ldr     r0, [r1]                                    
-    cmp     r0, #DFLT_STATE_STOP                        @comparing the value current state with starting state
-    beq     led_set_off                                 @if equal go to led_Set_off
-    movs    r0, #GPIO_LED_PIN                           
-    bl      asm_gpio_get                                @else turn the LED off
-    cmp     r0, #LED_VAL_OFF                            
-    beq     led_set_on                                  @if led is off, go to set on
-led_set_off:
-    movs    r1, #LED_VAL_OFF                            @ The LED is currently "on" so we want to turn it "off"
-    bl      led_set_state    
-                                                        @ Jump to portion of code where we set the state of the LED
-led_set_on: 
-    movs    r1, #LED_VAL_ON  
-                                      @ The LED is currently "off" so we want to turn it "on"
-led_set_state:                                          @ Set the LED GPIO pin number to r0 for use by asm_gpio_put
-    movs    r0, #GPIO_LED_PIN                           @ Update the the value of the LED GPIO pin (based on value in r1)  
-    bl      asm_gpio_put                                @update the state of the LED
+    ldr     r0, [r1]                                                              @update the state of the LED
     bl      alarm                                       @call the alarm routine
 alrm_done:
     pop     {pc}                                        @exiting the fucntion
@@ -163,10 +146,7 @@ install_gpio_isr:
     str     r1, [r2]                                    
     ldr     r2, =(PPB_BASE + M0PLUS_NVIC_ISER_OFFSET)   
     ldr     r1, =#0x2000                                
-    str     r1, [r2]      
-    ldr     r2, =(WATCHDOG_BASE + WATCHDOG_LOAD_OFFSET)      
-    ldr     r1, =#0xffffff                
-    str     r1, [r2]         
+    str     r1, [r2]           
     bx      lr                                          
 
 @ gpio interrupt service handler routine
@@ -182,8 +162,8 @@ gpio_isr:
     ldr     r1, =(GPIO_BTN_FALL_MSK)                                  @ loads value of falling edge for dwn btn and compares to interupt
     cmp     r0, r1
     beq     gpiofall                                                @if its equal enter the down routine
-    ldr     r1, =(GPIO_BTN_RISE_MSK)                                  @loads value of falling edge for up btn and compares to interupt
-    cmp     r0, r1
+    ldr     r2, =(GPIO_BTN_RISE_MSK)                                  @loads value of falling edge for up btn and compares to interupt
+    cmp     r0, r2
     beq     gpiorise                                                 @if its equal enter the up routine                                             @if its equal enter the engage routine
     b       done                                                    @ else exit
 
@@ -191,48 +171,56 @@ gpiofall:
     ldr     r2, =(IO_BANK0_BASE + IO_BANK0_INTR2_OFFSET)            @disables pending interupt by writing falling edge value to raw offset     
     ldr     r1, =#GPIO_BTN_FALL_MSK                                   
     str     r1,[r2]  
-    ldr     r2, =(TIMER_BASE + TIMER_TIMELR_OFFSET)
+    ldr     r2, =(TIMER_BASE + 0x28) 
     ldr     r1, [r2]
-    sub     r1, r0
-    cmp     r1, EMPTY_TIME
-    blt     sppace
-    bgt     enter
+    ldr     r2, =(TIMER_BASE + 0x28)
+    ldr     r5, [r2]
+    subs    r1, r6
+    ldr     r2, =#EMPTY_TIME
+    cmp     r1, r2
+    bgt     sppace
     bl      done    
     
 sppace:
-    bl      printspace
+    ldr     r0, =msgsapce
+    bl      printf
+    ldr     r3, =#ENTER_TIME
+    cmp     r1, r3
+    bgt     enter
     bl      done           
     
 enter:      
-    bl      entermorse
+    ldr     r0, =msgsapce
+    bl      printf
     bl      done                                 @goes to done
 
 gpiorise:
     ldr     r2, =(IO_BANK0_BASE + IO_BANK0_INTR2_OFFSET)            @disables pending interupt by writing falling edge value to raw offset     
     ldr     r1, =#GPIO_BTN_RISE_MSK                                   
-    str     r1,[r2]  
-    ldr     r2, =(TIMER_BASE + TIMER_TIMELR_OFFSET) 
+    str     r1, [r2]  
+    ldr     r2, =(TIMER_BASE + 0x28) 
     ldr     r1, [r2]
-    sub     r1, r0
-    cmp     r1, DOT_TIME
+    ldr     r2, =(TIMER_BASE + 0x28) 
+    ldr     r6, [r2]
+    subs    r1, r5
+    ldr     r2, =#DOT_TIME
+    cmp     r1, r2
     blt     dot   
     bgt     dash  
     bl      done      
 dot: 
-    bl      stringadd("dot")
+    ldr     r0, =msgdot
+    bl      printf
+    bl      addtoanswer
     bl      done     
 
 dash: 
-    bl      stringadd("dash")
+    ldr     r0, =msgdash
+    bl      printf
     bl      done   
-
-space: 
-    bl      stringadd("space")
-    bl      done     
+ 
                                     @ <TODO – add comment>
-done:                      
-    ldr     r2, =(TIMER_BASE + TIMER_TIMELR_OFFSET) 
-    ldr     r0, [r2]                          @proc the alarm routine 
+done:                                           @proc the alarm routine 
     pop     {pc}                                                    @exit the routine
 
 
