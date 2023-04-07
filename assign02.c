@@ -1,7 +1,13 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+
 #include "pico/stdlib.h"
 #include "hardware/gpio.h"
+#include "hardware/pio.h"
+#include "hardware/clocks.h"
+#include "assign02.pio.h"
+
 #define NUM_PIXELS 1  // There is 1 WS2812 device in the chain
 #define WS2812_PIN 28 // The GPIO pin that the WS2812 connected
 #define ARRAY_SIZE 38
@@ -11,15 +17,20 @@
 // Declare the main assembly code entry point.
 void main_asm();
 void outputChar();
+char *translate(char c);
 void checkEntry(char C, char *string, int lives);
 char *level1();
 char *level2();
 char *level3();
 char *level4();
 void setLED(int lives);
-void addtoanswer(char input);
-
-
+void addtoanswer(int input);
+void homescreen();
+void printinput();
+void timeoutscreen();
+void level0();
+void userenter();
+void entercommand();
 
 // Initialise a GPIO pin – see SDK for detail on gpio_init()
 void asm_gpio_init(uint pin) {
@@ -47,14 +58,207 @@ void asm_gpio_set_irq(uint pin) {
     gpio_set_irq_enabled(pin, GPIO_IRQ_EDGE_RISE, true);
 }
 
+
 char answer[50];
-char finalanswer[];
+char finalanswer[50];
 int  i = 0;
 bool rightorwrong;
 int lives;
 int count; // count will be incremented/decremented if a player gets the correct answer
 
-char *translate(char c);
+static inline void put_pixel(uint32_t pixel_grb)
+{
+    pio_sm_put_blocking(pio0, 0, pixel_grb << 8u);
+}
+
+/**
+ * @brief Function to generate an unsigned 32-bit composit GRB
+ *        value by combining the individual 8-bit paramaters for
+ *        red, green and blue together in the right order.
+ *
+ * @param r     The 8-bit intensity value for the red component
+ * @param g     The 8-bit intensity value for the green component
+ * @param b     The 8-bit intensity value for the blue component
+ * @return uint32_t Returns the resulting composit 32-bit RGB value
+ */
+static inline uint32_t urgb_u32(uint8_t r, uint8_t g, uint8_t b)
+{
+    return ((uint32_t)(r) << 8) |
+           ((uint32_t)(g) << 16) |
+           (uint32_t)(b);
+}
+
+char alphabet[ARRAY_SIZE] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R',
+                             'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ' '};
+
+char words[][20] = {"HELLO", "WORLD", "MORSE", "CODE", "MICRO", "COMP", "PICO", "WATER", "BREAD", "BOARD", "CAR", "COPY", "PASTE"};
+
+char *level1()
+{
+    printf("\nLEVEL 1\n-------\nIn this level your task is to enter the morse code corresponding to the given character\n");
+    printf("You are given both a character and the morse equivalent below \n");
+    int random = rand() % (ARRAY_SIZE - 1);
+    char c = alphabet[random];
+    char *s = translate(c);
+    printf("\nCharacter: %c\n", c);
+    printf("Morse equivalent of %c: %s \n", c, s);
+    return s;
+}
+
+char *level2()
+{
+    printf("\nLEVEL 2\n-------\nIn this level your task is to enter the morse code corresponding to the given character\n");
+    int random = rand() % (ARRAY_SIZE - 1);
+    char c = alphabet[random];
+    char *s = translate(c);
+    printf("\nCharacter: %c\n", c);
+    return s;
+}
+
+char *level3()
+{
+    printf("\nLEVEL 3\n-------\nIn this level your task is to enter the morse code corresponding to the given word\n");
+    printf("You are given both a word and the morse equivalent below \n");
+    int random = rand() % (12);
+    char *s = words[random];
+    char *morse;
+    char *trans = malloc(sizeof(char) * (MAX_STRING));
+    if (trans == NULL)
+    {
+        printf("\nError allocating memory for 'trans'\n");
+    }
+    trans[0] = '\0';
+    for (int i = 0; i < strlen(s); i++)
+    {
+        char c;
+        c = s[i];
+        morse = translate(c);
+        char space = ' ';
+        strncat(trans, morse, 4);
+        morse = translate(space);
+        strncat(trans, morse, 1);
+    }
+    char *newTrans = malloc(sizeof(char) * (MAX_STRING));
+    if (newTrans == NULL)
+    {
+        printf("\nError allocating memory for 'newTrans'\n");
+    }
+    newTrans[0] = '\0';
+    strncpy(newTrans, trans, strlen(trans) - 1);
+    newTrans[strlen(trans) - 1] = '\0';
+
+    printf("\nWord: %s\n", s);
+    printf("Morse equivalent of %s: %s \n", s, newTrans);
+    return newTrans;
+}
+
+char *level4()
+{
+    printf("\nLEVEL 4\n-------\nIn this level your task is to enter the morse code corresponding to the given word\n");
+    int random = rand() % (12);
+    char *s = words[random];
+    char *morse;
+    char *trans = malloc(sizeof(char) * (MAX_STRING));
+    if (trans == NULL)
+    {
+        printf("\nError allocating memory for 'trans'\n");
+    }
+    trans[0] = '\0';
+    for (int i = 0; i < strlen(s); i++)
+    {
+        char c;
+        c = s[i];
+        morse = translate(c);
+        char space = ' ';
+        strncat(trans, morse, 4);
+        morse = translate(space);
+        strncat(trans, morse, 1);
+    }
+    char *newTrans = malloc(sizeof(char) * (MAX_STRING));
+    if (newTrans == NULL)
+    {
+        printf("\nError allocating memory for 'newTrans'\n");
+    }
+    newTrans[0] = '\0';
+    strncpy(newTrans, trans, strlen(trans) - 1);
+    newTrans[strlen(trans) - 1] = '\0';
+
+    printf("\nWord: %s\n", s);
+    return newTrans;
+}
+
+void setLED(int lives)
+{
+    // if 3 lives set LED green
+    if (lives == 3)
+    {
+        put_pixel(urgb_u32(0x00, 0x7F, 0x00));
+    }
+    // if 2 lives set LED blue
+    if (lives == 2)
+    {
+        put_pixel(urgb_u32(0x00, 0x00, 0x7F));
+    }
+    // if 1 life set LED orange
+    if (lives == 1)
+    {
+        put_pixel(urgb_u32(0x96, 0x1E, 0x00));
+    }
+
+    // if no lives left set LED red
+    if (lives == 0)
+    {
+        put_pixel(urgb_u32(0xFF, 0x00, 0x00));
+    }
+}
+
+char *translate(char C)
+{
+    int i = 0;
+    // all possible morse outputs
+    char *morse[] = {".-", "-...", "-.-.", "-..", ".", "..-.", "--.", "....", "..", ".---",
+                     "-.-", ".-..", "--", "-.", "---", ".--.", "--.-", ".-.", "...", "-",
+                     "..-", "...-", ".--", "-..-", "-.--", "--..", "-----", ".----", "..---",
+                     "...--", "....-", ".....", "-....", "--...", "---..", "----.", " "};
+
+    // A to Z
+    int firstChar = (int)'A'; // 65
+    int lastChar = (int)'Z';  // 90
+    int space = (int)' ';
+    // first to last numbers
+    int firstNum = (int)'0'; // 48
+    int lastNum = (int)'9';  // 57
+
+    if (C == space)
+    {
+        // if c is a space set index to 36
+        i = 36;
+    }
+    // if ascii value of C is between ascii val of A & Z set index to
+    // ascii of C - ascii of A
+    else if (C <= lastChar && C >= firstChar)
+    {
+        i = (int)C - firstChar;
+    }
+    // if ascii value of C is between ascii val of 0 & 9 set index to
+    // ascii of C - ascii of 0 and add 26 to skip the alphabet chars
+    else if (C <= lastNum && C >= firstNum)
+    {
+        i = (int)C - firstNum + 26;
+    }
+
+    char *output = (char *)malloc(sizeof(char) * (strlen(morse[i]) + 1));
+    if (output)
+    {
+        strcpy(output, morse[i]);
+        return output;
+    }
+    else
+    {
+        printf("Malloc failedn\n");
+        return NULL;
+    }
+}
 
 void checkEntry(char C, char *string, int lives)
 {
@@ -82,29 +286,26 @@ void checkEntry(char C, char *string, int lives)
 }
 
 
+
 void printinput(){
-    printf("\n%s", answer);
+    printf("\n%s", finalanswer);
 }
 
 
 void addtoanswer(int input){
     if (input == 46){
-        printinput(); 
         answer[i] = '.';
         i++;
     }
     else if (input == 45){
-        printinput();
         answer[i] = '-';
         i++;
     }
     else if (input == 43){
-        printinput();
         answer[i] = ' ';
         i++;
     }
     else if (input == 32){
-        printinput();
         answer[i] = ' ';
         answer[i+1] = ' ';
         answer[i+2] = ' ';
@@ -112,8 +313,9 @@ void addtoanswer(int input){
     }
 }
 
-void userenter(char answer[]){
-    finalanswer[] = morsecoverter(answer);
+void userenter(){
+    strncpy(finalanswer, answer, 50);
+    printinput();
 }
 
 
@@ -139,27 +341,24 @@ void homescreen(){
 }
 
 void level0(){
-    char level1[] = "1";
-    char level2[] = "2";
-    char level3[] = "3";
-    char level4[] = "4";
-    if (strcmp(answer[], level1[])=0){
+    char level1[50] = ". - - - -";
+    char level2[50] = ". . - - -";
+    char level3[50] = ". . . - -";
+    char level4[50] = ". . . . -";
+    if (strcmp(finalanswer, level1) == 0){
         printf("begin level 1");
     }
 
-    else if (answer == level2){
+    else if (strcmp(finalanswer, level2) == 0){
         printf("begin level 2");
     }
 
-    else if (answer == level3){
+    else if (strcmp(finalanswer, level3) == 0){
         printf("begin level 3");
     }
 
-    else if (answer == level4){
+    else if (strcmp(finalanswer, level4) == 0){
         printf("begin level 4");
-    }
-    else {
-        timeoutscreen();
     }
 }
 
@@ -178,6 +377,9 @@ void timeoutscreen(){
     printf("| |__________________| | \n");
     printf("|/____________________\\| \n");
 }
+
+
+
 
 
 

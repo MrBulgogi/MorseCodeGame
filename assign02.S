@@ -42,10 +42,12 @@ main_asm:
     bl      init_gpio_en                         @Install the SVC interrupt service routine
     bl      install_alrm_isr
     bl      install_gpio_isr
+    ldr     r4, =#0
 Homescreen:
     bl      homescreen
 ChooseLevel:
-    bl      addtoanswer
+    bl      alarm
+    wfi
     bl      level0
     b       ChooseLevel  
 Level1:
@@ -93,17 +95,18 @@ init_gpio_en:
 
 alarm:
     push    {lr}                                        @pushes return address to stack
+
+    ldr     r2, =(TIMER_BASE + TIMER_INTE_OFFSET)       @loads offset of interupt enable
+    ldr     r1, =#0x1
+    str     r1, [r2]                                    @storing the correct value into the interupt register
     ldr     r2, =(TIMER_BASE + TIMER_TIMELR_OFFSET)     @loads timer component adress and 32 bitoffset adress into r2 
     ldr     r1, [r2]
-    ldr     r2, =ltimer                                 @loads timing into r2
+    ldr     r2, =DFLT_ALARM_TIME                               @loads timing into r2
     ldr     r0, [r2]
     add     r1, r0                                      @adds the timing to the two address values
     ldr     r2, =(TIMER_BASE + TIMER_ALARM0_OFFSET)     @laods offset for alarm control register
     str     r1, [r2]                                    @ stores added value into register
     
-    ldr     r2, =(TIMER_BASE + TIMER_INTE_OFFSET)       @loads offset of interupt enable
-    ldr     r1, =#0x1
-    str     r1, [r2]                                    @storing the correct value into the interupt register
     pop     {pc}
     
 
@@ -130,8 +133,15 @@ alrm_isr:
     ldr     r1, =#0x1                                   @ <TODO – add comment>
     str     r1, [r2]                                    @ storing the correct value into the register to disable interupt
     ldr     r1, =lstate                                 
-    ldr     r0, [r1]                                                              @update the state of the LED
-    bl      alarm                                       @call the alarm routine
+    ldr     r0, [r1]   
+    ldr     r7, =#1
+    adds    r4, r7
+    cmp     r4, #2
+    beq     good  
+    b       alrm_done
+good:
+    bl      userenter  
+                                               @update the state of the LED                                    @call the alarm routine
 alrm_done:
     pop     {pc}                                        @exiting the fucntion
 
@@ -161,6 +171,7 @@ gpio_isr:
     str     r1, [r2]                                                
     ldr     r2, = (TIMER_BASE + TIMER_INTE_OFFSET)                  @ stores correct value to enable the interupt
     str     r1, [r2]            
+    ldr     r4, =#0
     ldr     r1, =(GPIO_BTN_FALL_MSK)                                  @ loads value of falling edge for dwn btn and compares to interupt
     cmp     r0, r1
     beq     gpiofall                                                @if its equal enter the down routine
@@ -187,13 +198,11 @@ gpiofall:
 empty:
     movs    r0, #43
     bl      addtoanswer
-    bl      entercommand
     bl      done 
 
 spase:
     movs    r0, #32
     bl      addtoanswer
-    bl      entercommand
     bl      done 
 
        
@@ -207,6 +216,7 @@ gpiorise:
     ldr     r1, [r2]
     ldr     r2, =(TIMER_BASE + 0x28) 
     ldr     r6, [r2]
+    ldr     r7, [r6]
     subs    r1, r5
     ldr     r2, =#DOT_TIME
     cmp     r1, r2
@@ -216,13 +226,11 @@ gpiorise:
 dot: 
     movs    r0, #46
     bl      addtoanswer
-    bl      entercommand
     bl      done     
 
 dash: 
     movs    r0, #45
     bl      addtoanswer
-    bl      entercommand
     bl      done   
  
                                     @ <TODO – add comment>
