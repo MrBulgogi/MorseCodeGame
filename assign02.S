@@ -26,10 +26,11 @@
 .equ    LED_VAL_ON,    1              @ Specify value that turns the LED "on"
 .equ    LED_VAL_OFF,   0              @ Specify value that turns the LED "off"
 
-.equ    DOT_TIME,    1000000             @ Specify value that should display dot
-.equ    DASH_TIME,   3000000            @ Specify value that should display dash
-.equ    EMPTY_TIME,  1000000          @ Specify value that should display spoace
-.equ    ENTER_TIME,  2000000           @ Specify value that should check code
+.equ    DOT_TIME,    300000             @ Specify value that should display dot
+.equ    DASH_TIME,   1000000            @ Specify value that should display dash
+.equ    EMPTY_TIME,  300000          @ Specify value that should display spoace
+.equ    SPASE_TIME,  1000000           @ Specify value that should check code
+.equ    ENTER_TIME,  2000000  
 
 
 .equ    GPIO_ISR_OFFSET, 0x74         @ GPIO is int #13 (vector table entry 29)
@@ -45,7 +46,7 @@ Homescreen:
     bl      homescreen
 ChooseLevel:
     bl      addtoanswer
-    
+    bl      level0
     b       ChooseLevel  
 Level1:
 
@@ -104,6 +105,7 @@ alarm:
     ldr     r1, =#0x1
     str     r1, [r2]                                    @storing the correct value into the interupt register
     pop     {pc}
+    
 
 install_alrm_isr:
     ldr     r2, =(PPB_BASE + M0PLUS_VTOR_OFFSET)        @loads rp2040 component adress and vector adress into r2 
@@ -176,23 +178,26 @@ gpiofall:
     ldr     r2, =(TIMER_BASE + 0x28)
     ldr     r5, [r2]
     subs    r1, r6
-    ldr     r2, =#EMPTY_TIME
+    ldr     r2, =#SPASE_TIME
     cmp     r1, r2
-    bgt     sppace
-    bl      done    
+    blt     empty
+    bge     spase
+    bl      done
     
-sppace:
-    ldr     r0, =msgsapce
-    bl      printf
-    ldr     r3, =#ENTER_TIME
-    cmp     r1, r3
-    bgt     enter
-    bl      done           
-    
-enter:      
-    ldr     r0, =msgsapce
-    bl      printf
-    bl      done                                 @goes to done
+empty:
+    movs    r0, #43
+    bl      addtoanswer
+    bl      entercommand
+    bl      done 
+
+spase:
+    movs    r0, #32
+    bl      addtoanswer
+    bl      entercommand
+    bl      done 
+
+       
+                               @goes to done
 
 gpiorise:
     ldr     r2, =(IO_BANK0_BASE + IO_BANK0_INTR2_OFFSET)            @disables pending interupt by writing falling edge value to raw offset     
@@ -206,21 +211,23 @@ gpiorise:
     ldr     r2, =#DOT_TIME
     cmp     r1, r2
     blt     dot   
-    bgt     dash  
+    bge     dash  
     bl      done      
 dot: 
-    ldr     r0, =msgdot
-    bl      printf
+    movs    r0, #46
     bl      addtoanswer
+    bl      entercommand
     bl      done     
 
 dash: 
-    ldr     r0, =msgdash
-    bl      printf
+    movs    r0, #45
+    bl      addtoanswer
+    bl      entercommand
     bl      done   
  
                                     @ <TODO – add comment>
 done:                                           @proc the alarm routine 
+    bl      alarm
     pop     {pc}                                                    @exit the routine
 
 
