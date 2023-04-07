@@ -8,6 +8,35 @@
 #include "pico/stdlib.h"
 #include "hardware/watchdog.h"
 
+//enables watchdog.
+void watchdog_enabler(){
+    watchdog_enable(8000, 0);
+    printf("watchdog enabled\n");
+    if (watchdog_caused_reboot()) 
+    {
+        //printf("updating\n");
+        //printf("runs:%d\n",runs);
+        //watchdog_enable(1000,1);
+        //printf("%d\n",runs);
+    } 
+    else 
+    {
+        //printf("Clean boot\n");
+    }
+}
+//resets timer of watchdog,
+void watchdog_timer_reset(){
+    watchdog_update();
+    //printf("timer reset");
+}
+
+//ignore the rest of the code.
+
+
+
+
+
+
 //bool temp;
 int runs=0;
 int main() {
