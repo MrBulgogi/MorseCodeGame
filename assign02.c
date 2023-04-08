@@ -5,6 +5,7 @@
 #include "pico/stdlib.h"
 #include "hardware/gpio.h"
 #include "hardware/pio.h"
+#include "hardware/watchdog.h"
 #include "hardware/clocks.h"
 #include "assign02.pio.h"
 
@@ -28,9 +29,34 @@ void addtoanswer(int input);
 void homescreen();
 void printinput();
 void timeoutscreen();
-void level0();
-void userenter();
+int level0();
+void printtheoutput();
 void entercommand();
+void watchdog_enabler();
+void watchdog_timer_reset();
+
+void watchdog_enabler(){
+    watchdog_enable(8000, 0);
+    printf("watchdog enabled\n");
+    if (watchdog_caused_reboot()) 
+    {
+        timeoutscreen();
+        //printf("updating\n");
+        //printf("runs:%d\n",runs);
+        //watchdog_enable(1000,1);
+        //printf("%d\n",runs);
+    } 
+    else 
+    {
+        //printf("Clean boot\n");
+    }
+}
+//resets timer of watchdog,
+void watchdog_timer_reset(){
+    watchdog_update();
+    //printf("timer reset");
+}
+
 
 // Initialise a GPIO pin – see SDK for detail on gpio_init()
 void asm_gpio_init(uint pin) {
@@ -288,7 +314,7 @@ void checkEntry(char C, char *string, int lives)
 
 
 void printinput(){
-    printf("\n%s", finalanswer);
+    printf("\nFINAL ANSWER:%s\n", finalanswer);
 }
 
 
@@ -313,16 +339,17 @@ void addtoanswer(int input){
     }
 }
 
-void userenter(){
+void printtheoutput(){
     strncpy(finalanswer, answer, 50);
     printinput();
+    level0();
+    strncpy(answer, "", 50);
+    printf("%s", answer);
+    i = 0;
 }
-
-
-void watchdog(){
-}
-
+ 
 void homescreen(){
+    printf("\n");
     printf(" ______________________ \n");
     printf("|\\ __________________ /| \n");
     printf("| |  ╔╦╗╔═╗╦═╗╔═╗╔═╗ | | \n");
@@ -340,26 +367,29 @@ void homescreen(){
     
 }
 
-void level0(){
+int level0(){
     char level1[50] = ". - - - -";
     char level2[50] = ". . - - -";
     char level3[50] = ". . . - -";
     char level4[50] = ". . . . -";
     if (strcmp(finalanswer, level1) == 0){
-        printf("begin level 1");
+        printf("\nbegin level 1\n");
+        return 1;
     }
-
     else if (strcmp(finalanswer, level2) == 0){
-        printf("begin level 2");
+        printf("\nbegin level 2\n");
+        return 2;
     }
-
     else if (strcmp(finalanswer, level3) == 0){
-        printf("begin level 3");
+        printf("\nbegin level 3\n");
+        return 3;
+    }
+    else if (strcmp(finalanswer, level4) == 0){
+        printf("\nbegin level 4\n");
+        return 4;
     }
 
-    else if (strcmp(finalanswer, level4) == 0){
-        printf("begin level 4");
-    }
+    return 0;
 }
 
 void timeoutscreen(){
@@ -413,6 +443,10 @@ void stringcomparison(char input[], char question[]){
         wronginput();
     }
 }*/
+
+void sleep(){
+    sleep_ms(2000);
+}
 
 // Main entry point of the application
 int main() {
