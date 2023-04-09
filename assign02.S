@@ -7,6 +7,7 @@
 .cpu    cortex-m0plus
 .thumb
 .global main_asm
+.global level0
 .align  4
 
 
@@ -43,14 +44,24 @@ main_asm:
     bl      init_gpio_en                         @Install the SVC interrupt service routine
     bl      install_alrm_isr
     bl      install_gpio_isr
-    bl      watchdog_enabler
 Homescreen:
     bl      homescreen
+    bl      setLED
     bl      sleep
     ldr     r4, =#3
+    ldr     r5, =#0
     bl      alarm
+    b       ChooseLevel
+    
+Inputting0:
+    cmp     r5, ONE_SEC
+    beq     Inputtingover0
+    b       Inputting0
 ChooseLevel:
     bl      level0
+    b       Inputting0
+Inputtingover0:
+    ldr     r5, =ZERO_SEC
     cmp     r0, #1
     beq     Level1
     cmp     r0, #2
@@ -59,18 +70,77 @@ ChooseLevel:
     beq     Level3
     cmp     r0, #4
     beq     Level4
-    b       ChooseLevel  
+    b       ChooseLevel
+
+Inputting:
+    cmp     r5, ONE_SEC
+    beq     Inputtingover
+    b       Inputting
 Level1:
+    bl      level1
+    b       Inputting
+Inputtingover:
+    ldr     r5, =ZERO_SEC
+    bl      checkEntry
+    cmp     r0, #1
+    beq     next1
+    b       Level1
+next1:
+    bl      Level2header
+    b       Level2
 
+Inputting2:
+    cmp     r5, ONE_SEC
+    beq     Inputtingover2
+    b       Inputting2
 Level2:
+    bl      level2
+    b       Inputting2
+Inputtingover2:
+    ldr     r5, =ZERO_SEC
+    bl      checkEntry
+    cmp     r0, #1
+    beq     next2
+    b       Level2
+next2:
+    bl      Level3header
+    b       Level3
 
+Inputting3:
+    cmp     r5, ONE_SEC
+    beq     Inputtingover3
+    b       Inputting3
 Level3:
+    bl      level3
+    b       Inputting3
+Inputtingover3:
+    ldr     r5, =ZERO_SEC
+    bl      checkEntry
+    cmp     r0, #1
+    beq     next3
+    b       Level3
+next3:
+    bl      Level4header
+    b       Level4
 
+Inputting4:
+    cmp     r5, ONE_SEC
+    beq     Inputtingover4
+    b       Inputting4
 Level4:
-
+    bl      level4
+    b       Inputting4
+Inputtingover4:
+    ldr     r5, =ZERO_SEC
+    bl      checkEntry
+    cmp     r0, #1
+    beq     GameFinished
+    b       Level4
 ResetGame:
 
 GameFinished:
+    bl      gameover
+    b       main_asm          
 
 GameOver:
 
@@ -142,14 +212,16 @@ alrm_isr:
     ldr     r1, =#0x1                                   @ <TODO – add comment>
     str     r1, [r2]    @update the state of the LED  
     cmp     r7, #ONE_SEC
-    beq     alrm_done          
-    ldr     r3, =ONE_SEC
-    adds    r4, r4, r3      
+    beq     alrm_done   
+    ldr     r5, =ZERO_SEC       
+    ldr     r1, =ONE_SEC
+    adds    r4, r4, r1   
     cmp     r4, #TWO_SEC  
-    beq     dashproc
+    beq     dashproc    
     bl      alrm_done
 dashproc:                @ storing the correct value into the register to disable interupt
-    bl      printtheoutput     @update the state of the LED                              @call the alarm routine
+    bl      printtheoutput     @update the state of the LED
+    ldr     r5, =#1                             @call the alarm routine
 alrm_done:
     bl      alarm
     pop     {pc}                                        @exiting the fucntion
@@ -195,10 +267,10 @@ gpiofall:
     str     r1,[r2]  
     ldr     r2, =(TIMER_BASE + 0x28) 
     ldr     r1, [r2]
-    ldr     r2, =(TIMER_BASE + 0x28)
-    ldr     r5, [r2]
     ldr     r7, =#ONE_SEC
     subs    r1, r6
+    ldr     r2, =(TIMER_BASE + 0x28)
+    ldr     r6, [r2]
     ldr     r2, =#SPASE_TIME
     cmp     r1, r2
     blt     empty
@@ -230,10 +302,10 @@ gpiorise:
     str     r1, [r2]  
     ldr     r2, =(TIMER_BASE + 0x28) 
     ldr     r1, [r2]
+    ldr     r7, =#ZERO_SEC
+    subs    r1, r6 
     ldr     r2, =(TIMER_BASE + 0x28) 
     ldr     r6, [r2]
-    ldr     r7, =#ZERO_SEC
-    subs    r1, r5 
     ldr     r2, =#DOT_TIME
     cmp     r1, r2
     blt     dot   
