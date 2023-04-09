@@ -1,3 +1,4 @@
+
 #include "hardware/regs/addressmap.h"
 #include "hardware/regs/io_bank0.h"
 #include "hardware/regs/timer.h"
@@ -7,6 +8,7 @@
 .cpu    cortex-m0plus
 .thumb
 .global main_asm
+.global level0
 .align  4
 
 
@@ -31,7 +33,9 @@
 .equ    DASH_TIME,   1000000            @ Specify value that should display dash
 .equ    EMPTY_TIME,  300000          @ Specify value that should display spoace
 .equ    SPASE_TIME,  1000000           @ Specify value that should check code
-.equ    ENTER_TIME,  2000000  
+.equ    ENTER_TIME, 2000000
+.equ    MIN_TIME,    100000 
+
 
 
 .equ    GPIO_ISR_OFFSET, 0x74         @ GPIO is int #13 (vector table entry 29)
@@ -45,13 +49,22 @@ main_asm:
     bl      install_gpio_isr
 Homescreen:
     bl      homescreen
+    bl      setLED
     bl      sleep
-    //bl      watchdog_enabler
     ldr     r4, =#3
+    ldr     r5, =#0
     bl      alarm
-    bl      watchdog_enabler
+    b       ChooseLevel
+    
+Inputting0:
+    cmp     r5, ONE_SEC
+    beq     Inputtingover0
+    b       Inputting0
 ChooseLevel:
-    //bl      watchdog_enabler
+    cmp     r5, #ONE_SEC
+    bne     Inputting0
+Inputtingover0:
+    ldr     r5, =ZERO_SEC
     bl      level0
     cmp     r0, #1
     beq     Level1
@@ -61,71 +74,82 @@ ChooseLevel:
     beq     Level3
     cmp     r0, #4
     beq     Level4
-    b       ChooseLevel  
+    b       ChooseLevel
+
+Inputting:
+    cmp     r5, ONE_SEC
+    beq     Inputtingover
+    b       Inputting
 Level1:
-    bl      level1Header
-level1loop:
-    bl      clearAnswer
     bl      level1
-    //userinput
-    bl      compareAnswer
+    cmp     r5, #ONE_SEC
+    bne     Inputting
+Inputtingover:
+    ldr     r5, =ZERO_SEC
+    bl      checkEntry
     cmp     r0, #1
-    beq     GameOver
-    cmp     r0, #2
-    beq     Level2
-    cmp     r0, #3
-    beq     Level3
-    cmp     r0, #4
-    beq     Level4
-    cmp     r0, #5
-    beq     level1loop
-    
+    beq     next1
+    b       Level1
+next1:
+    bl      Level2header
+    b       Level2
 
+Inputting2:
+    cmp     r5, ONE_SEC
+    beq     Inputtingover2
+    b       Inputting2
 Level2:
-    bl      level2Header
-level2loop:
-    bl      clearAnswer
     bl      level2
-    //userinput
-    bl      compareAnswer
+    cmp     r5, #ONE_SEC
+    bne     Inputting2
+Inputtingover2:
+    ldr     r5, =ZERO_SEC
+    bl      checkEntry
     cmp     r0, #1
-    beq     GameOver
-    cmp     r0, #3
-    beq     Level3
-    cmp     r0, #4
-    beq     Level4
-    cmp     r0, #5
-    beq     level2loop
+    beq     next2
+    b       Level2
+next2:
+    bl      Level3header
+    b       Level3
 
+Inputting3:
+    cmp     r5, ONE_SEC
+    beq     Inputtingover3
+    b       Inputting3
 Level3:
-    bl      level3Header
-level3loop:
-    bl      clearAnswer
     bl      level3
-    //userinput
-    bl      compareAnswer
+    cmp     r5, #ONE_SEC
+    bne     Inputting3
+Inputtingover3:
+    ldr     r5, =ZERO_SEC
+    bl      checkEntry
     cmp     r0, #1
-    beq     GameOver
-    cmp     r0, #4
-    beq     Level4
-    cmp     r0, #5
-    beq     level3loop
+    beq     next3
+    b       Level3
+next3:
+    bl      Level4header
+    b       Level4
 
-Level4:
-    bl      level4Header
-level4loop:
+Inputting4:
     bl      clearAnswer
+    cmp     r5, ONE_SEC
+    beq     Inputtingover4
+    b       Inputting4
+Level4:
     bl      level4
-    //userinput
-    bl      compareAnswer
+    cmp     r5, #ONE_SEC
+    bne     Inputting4
+Inputtingover4:
+    ldr     r5, =ZERO_SEC
+    bl      checkEntry
     cmp     r0, #1
-    beq     GameOver
-    cmp     r0, #5
-    beq     level4loop
-
+    beq     GameFinished
+    b       Level4
 ResetGame:
 
 GameFinished:
+    bl      gameover
+    b       main_asm          
 
 GameOver:
 
@@ -197,14 +221,16 @@ alrm_isr:
     ldr     r1, =#0x1                                   @ <TODO – add comment>
     str     r1, [r2]    @update the state of the LED  
     cmp     r7, #ONE_SEC
-    beq     alrm_done          
-    ldr     r3, =ONE_SEC
-    adds    r4, r4, r3      
+    beq     alrm_done   
+    ldr     r5, =ZERO_SEC       
+    ldr     r1, =ONE_SEC
+    adds    r4, r4, r1   
     cmp     r4, #TWO_SEC  
-    beq     dashproc
+    beq     dashproc    
     bl      alrm_done
 dashproc:                @ storing the correct value into the register to disable interupt
-    bl      printtheoutput     @update the state of the LED                              @call the alarm routine
+    bl      printtheoutput     @update the state of the LED
+    ldr     r5, =#1                             @call the alarm routine
 alrm_done:
     bl      alarm
     pop     {pc}                                        @exiting the fucntion
@@ -250,19 +276,22 @@ gpiofall:
     str     r1,[r2]  
     ldr     r2, =(TIMER_BASE + 0x28) 
     ldr     r1, [r2]
-    ldr     r2, =(TIMER_BASE + 0x28)
-    ldr     r5, [r2]
     ldr     r7, =#ONE_SEC
     subs    r1, r6
+    ldr     r2, =(TIMER_BASE + 0x28)
+    ldr     r6, [r2]
     ldr     r2, =#SPASE_TIME
     cmp     r1, r2
     blt     empty
-    ldr     r2, =#SPASE_TIME
+    ldr     r2, =#ENTER_TIME
     cmp     r1, r2
-
+    blt     spase
     b       done
     
 empty:
+    ldr     r2, =#MIN_TIME
+    cmp     r1, r2
+    blt     done
     movs    r0, #43
     bl      addtoanswer
     ldr     r0, =msgsapce
@@ -272,10 +301,8 @@ empty:
 spase:
     movs    r0, #32
     bl      addtoanswer
-    ldr     r0, =msgsapce
-    bl      printf   
-    bl      printf
-    bl      printf
+    ldr     r0, =msgplus
+    bl      printf  
     b       done 
 
        
@@ -285,10 +312,10 @@ gpiorise:
     str     r1, [r2]  
     ldr     r2, =(TIMER_BASE + 0x28) 
     ldr     r1, [r2]
+    ldr     r7, =#ZERO_SEC
+    subs    r1, r6 
     ldr     r2, =(TIMER_BASE + 0x28) 
     ldr     r6, [r2]
-    ldr     r7, =#ZERO_SEC
-    subs    r1, r5 
     ldr     r2, =#DOT_TIME
     cmp     r1, r2
     blt     dot   
@@ -319,9 +346,11 @@ done:
 msgdot:    .asciz "."
 msgdash:   .asciz "-"
 msgsapce:   .asciz " "
+msgplus:    .asciz "+"
 
 
 
 .data
 lstate: .word   DFLT_STATE_STRT
 ltimer: .word   DFLT_ALARM_TIME
+
