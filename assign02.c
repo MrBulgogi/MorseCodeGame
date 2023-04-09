@@ -16,7 +16,7 @@
 
 
 
-// Declare the main assembly code entry point.
+// Declare the all the functions so they can be called whenever in the code
 void main_asm();
 void outputChar();
 char *translate(char c);
@@ -36,11 +36,38 @@ void entercommand();
 void watchdog_enabler();
 void watchdog_timer_reset();
 void gameover();
-int levelimon();
 void Level2header();
 void Level3header();
 void Level4header();
-void presstostart();
+void statistics_printout();
+void reset_levelstatistics();
+void reset_totalstatistics();
+void sleep();
+void sleeplong();
+
+//gloabal arrays for words and letters so we can get the morse in the code
+char alphabet[ARRAY_SIZE] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R',
+                             'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ' '};
+
+char words[][20] = {"HELLO", "WORLD", "MORSE", "CODE", "MICRO", "COMP", "PICO", "WATER", "BREAD", "BOARD", "CAR", "COPY", "PASTE"};
+//global variables used in the code
+char answer[50];
+char finalanswer[50];
+int  i = 0;
+bool rightorwrong;
+int lives = 3;
+int count = 0; // count will be incremented/decremented if a player gets the correct answer
+char s[50];
+char b[50];
+int attempt_tracker =0;
+int correct_tracker=0;
+int deaths=0;
+double accuracy;
+int attempt_tracker2 =0;
+int correct_tracker2=0;
+double accuracy2;
+
+
 
 // Main entry point of the application
 int main() {
@@ -54,20 +81,18 @@ int main() {
     return 0;                      // Application return code
 }
 
-void presstostart(){
-    printf("press button twice to turn on game");
-}
 
-
+// This function allows us to enable the watchdog timer
 void watchdog_enabler(){
     watchdog_enable(8000, 0);
     if (watchdog_caused_reboot()) 
     {
-        timeoutscreen();
-        sleep_ms(3000);
+        timeoutscreen();  //prints a timeout screen if the watchdog was activate
+        printf("game starting in 3 seconds");
+        sleep_ms(3000);   //sleeps for 3 seconds so the programme doesnt start immediately after
     } 
     else 
-    {   printf("watchdog enabled\n");
+    {   printf("watchdog enabled\n");       //print watchdog enabled for when we call it
         sleep_ms(3000);
         //printf("Clean boot\n");
     }
@@ -106,15 +131,6 @@ void asm_gpio_set_irq(uint pin) {
 }
 
 
-char answer[50];
-char finalanswer[50];
-int  i = 0;
-bool rightorwrong;
-int lives = 3;
-int count = 0; // count will be incremented/decremented if a player gets the correct answer
-char s[50];
-char b[50];
-
 static inline void put_pixel(uint32_t pixel_grb)
 {
     pio_sm_put_blocking(pio0, 0, pixel_grb << 8u);
@@ -137,10 +153,12 @@ static inline uint32_t urgb_u32(uint8_t r, uint8_t g, uint8_t b)
            (uint32_t)(b);
 }
 
-char alphabet[ARRAY_SIZE] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R',
-                             'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ' '};
-
-char words[][20] = {"HELLO", "WORLD", "MORSE", "CODE", "MICRO", "COMP", "PICO", "WATER", "BREAD", "BOARD", "CAR", "COPY", "PASTE"};
+void clearAnswer()
+{
+    answer[0] = '\0';
+    finalanswer[0] = '\0';
+    s[0] = '\0';
+}
 
 char *level1()
 {
@@ -165,9 +183,10 @@ char *level2()
 
 char *level3()
 {
+    clearAnswer();
     watchdog_timer_reset();
     int random = rand() % (12);
-    strncpy(b, words[random], 50);
+    strncpy(s, words[random], 50);
     char *morse;
     char *trans = malloc(sizeof(char) * (MAX_STRING));
     if (trans == NULL)
@@ -175,10 +194,10 @@ char *level3()
         printf("\nError allocating memory for 'trans'\n");
     }
     trans[0] = '\0';
-    for (int i = 0; i < strlen(b); i++)
+    for (int i = 0; i < strlen(s); i++)
     {
         char c;
-        c = b[i];
+        c = s[i];
         morse = translate(c);
         char space = ' ';
         strncat(trans, morse, 8);
@@ -193,20 +212,23 @@ char *level3()
         printf("\nError allocating memory for 'newTrans'\n");
     }
     newTrans[0] = '\0';
-    strncpy(newTrans, trans, strlen(trans) - 2);
-    newTrans[strlen(trans) - 2] = '\0';
-    strncpy(s, newTrans, 50);
-    printf("%s", s);
-    printf("\nWord: %s\n", b);
-    printf("Morse equivalent of %s: %s \n", b, newTrans);
-    return s;
+    strncpy(newTrans, trans, strlen(trans) - 3);
+    newTrans[strlen(trans) - 3] = '\0';
+
+    printf("\nWord: %s\n", s);
+    printf("Morse equivalent of %s: %s\n", s, newTrans);
+    // printf("END");
+    strcpy(s, newTrans);
+    s[strlen(newTrans)] = '\0';
+    return newTrans;
 }
 
 char *level4()
 {
+    clearAnswer();
     watchdog_timer_reset();
     int random = rand() % (12);
-    strncpy(b, words[random], 50);
+    strncpy(s, words[random], 50);
     char *morse;
     char *trans = malloc(sizeof(char) * (MAX_STRING));
     if (trans == NULL)
@@ -214,10 +236,10 @@ char *level4()
         printf("\nError allocating memory for 'trans'\n");
     }
     trans[0] = '\0';
-    for (int i = 0; i < strlen(b); i++)
+    for (int i = 0; i < strlen(s); i++)
     {
         char c;
-        c = b[i];
+        c = s[i];
         morse = translate(c);
         char space = ' ';
         strncat(trans, morse, 8);
@@ -232,11 +254,12 @@ char *level4()
         printf("\nError allocating memory for 'newTrans'\n");
     }
     newTrans[0] = '\0';
-    strncpy(newTrans, trans, strlen(trans) - 2);
-    newTrans[strlen(trans) - 2] = '\0';
-    strncpy(s, newTrans, 50);
-    printf("%s", s);
-    printf("\nWord: %s\n", b);
+    strncpy(newTrans, trans, strlen(trans) - 3);
+    newTrans[strlen(trans) - 3] = '\0';
+
+    printf("\nWord: %s\n", s);
+    strcpy(s, newTrans);
+    s[strlen(newTrans)] = '\0';
     return newTrans;
 }
 
@@ -316,8 +339,12 @@ char *translate(char C)
 
 int checkEntry()
 {
+    attempt_tracker++;
+    attempt_tracker2++;
     if (strcmp(s, finalanswer) == 0)
-    {
+    {   
+        correct_tracker++;
+        correct_tracker2++;
         printf("CORRECT!\n");
         if (lives < 3)
         {
@@ -325,7 +352,8 @@ int checkEntry()
             setLED();
         }
         count++;
-        if (count == 6){
+        if (count == 6)
+        {
             count = 1;
         }
     }
@@ -338,22 +366,58 @@ int checkEntry()
             setLED();
             count = 0;
         }
-        else {
+        else
+        {
+            deaths++;
             gameover();
-            sleep_ms(1000);
-            main();
         }
     }
     printf("You have %d lives left!\n", lives);
     printf("You have gotten %d in a row!\n", count);
+    //printf("accuracy:%f",accuracy);
     strncpy(s, "", 50);
-    if (count == 5){
-            return 1;
-        }
-    else {
+    if (count == 5)
+    {
+        return 1;
+    }
+    else
+    {
         return 0;
     }
 }
+
+void statistics_printout(){
+    float accuracy = ((float)correct_tracker / (float)attempt_tracker) * 100;
+    float accuracy2 = ((float)correct_tracker2 / (float)attempt_tracker2) * 100;
+    printf(" ______________________ \n");
+    printf("|\\ __________________ /| \n");
+    printf("| | Level Statistics | |\n");
+    printf("| | Attempts:%d      | |\n",attempt_tracker);
+    printf("| | Correct:%d       | |\n",correct_tracker);
+    printf("| |Accuracy:%.2f%%   | |\n", accuracy);
+    printf("| |__________________| | \n");
+    printf("| | Player Overall   | |\n");
+    printf("| | Attempts:%d      | |\n",attempt_tracker2);
+    printf("| | Deaths:%d        | |\n",deaths);
+    printf("| | Correct:%d       | |\n",correct_tracker2);
+    printf("| | Accuracy:%.2f%%  | |\n", accuracy2);
+    printf("| |__________________| | \n");
+    printf("|/____________________\\| \n");
+}
+
+void reset_levelstatistics(){
+    attempt_tracker = 0;
+    correct_tracker = 0;
+}
+
+void reset_totalstatistics(){
+    deaths = 0;
+    attempt_tracker = 0;
+    correct_tracker = 0;
+    attempt_tracker2 = 0;
+    correct_tracker2 = 0;
+}
+
 
 
 
@@ -362,15 +426,27 @@ void printinput(){
 }
 
 void Level2header(){
-    printf("\nLEVEL 2\n-------\nIn this level your task is to enter the morse code corresponding to the given character\n");
+    printf("\n -----------------------------------------------------------------------------------------\n");
+    printf("| LEVEL 2                                                                                 |");
+    printf(" -----------------------------------------------------------------------------------------\n");
+    printf("| In this level your task is to enter the morse code corresponding to the given character |\n");
+    printf(" -----------------------------------------------------------------------------------------\n");
 }
 
 void Level3header(){
-    printf("\nLEVEL 3\n-------\nIn this level your task is to enter the morse code corresponding to the given word\n");
-    printf("You are given both a word and the morse equivalent below \n");
+    printf("\n -----------------------------------------------------------------------------------------\n");
+    printf("| LEVEL 3                                                                                 |");
+    printf(" -----------------------------------------------------------------------------------------\n");
+    printf("| In this level your task is to enter the morse code corresponding to the given word      |\n");
+    printf("| You are given both a word and the morse equivalent below                                |\n");
+    printf(" -----------------------------------------------------------------------------------------\n");
 }
 void Level4header(){
-    printf("\nLEVEL 4\n-------\nIn this level your task is to enter the morse code corresponding to the given word\n");
+    printf("\n -----------------------------------------------------------------------------------------\n");
+    printf("| LEVEL 4                                                                                 |");
+    printf(" -----------------------------------------------------------------------------------------\n");
+    printf("| In this level your task is to enter the morse code corresponding to the given word      |\n");
+    printf(" -----------------------------------------------------------------------------------------\n");
 }
 
 
@@ -395,24 +471,6 @@ void addtoanswer(int input){
     }
 }
 
-/*int levelimon(uint currentlevel){
-    if (currentlevel = 1){
-        return 1;
-    }
-    else if (currentlevel = 2){
-        return 2;
-    }
-    else if (currentlevel = 3){
-        return 3;
-    }
-    else if (currentlevel = 4){
-        return 4;
-    }
-    else {
-        return 0;
-    }
-}*/
-
 void printtheoutput(){
     strncpy(finalanswer, answer, 50);
     printinput();
@@ -423,24 +481,25 @@ void printtheoutput(){
  
 void homescreen(){
     printf("\n");
-    printf(" ______________________ \n");
-    printf("|\\ __________________ /| \n");
-    printf("| |  ╔╦╗╔═╗╦═╗╔═╗╔═╗ | | \n");
-    printf("| |  ║║║║ ║╠╦╝╚═╗║╣  | | \n");
-    printf("| |  ╩ ╩╚═╝╩╚═╚═╝╚═╝ | | \n");
-    printf("| |  ╔═╗╔═╗╔╦╗╔═╗    | | \n");
-    printf("| |  ║  ║ ║ ║║║╣     | | \n");
-    printf("| |  ╚═╝╚═╝═╩╝╚═╝    | | \n");
-    printf("| |  ╔═╗╔═╗╔╦╗╔═╗    | | \n");
-    printf("| |  ║ ╦╠═╣║║║║╣     | | \n");
-    printf("| |  ╚═╝╩ ╩╩ ╩╚═╝    | | \n");
-    printf("| |__________________| | \n");
-    printf("|/____________________\\| \n");
-    printf("Enter Morse To Start Level\n<. - - - -> | Level 01 | Chars | EASY\n<. . - - -> | Level 02 | Chars | HARD\n<. . . - -> | Level 03 | Words | EASY\n<. . . . -> | Level 04 | Words | HARD\n\n");  // Basic print to console
+    printf(" ___________________________________________________________________ \n");
+    printf("|\\ ________________________________________________________________/| \n");
+    printf("| |  ╔╦╗╔═╗╦═╗╔═╗╔═╗  |   Enter Morse To Start Level              | | \n");
+    printf("| |  ║║║║ ║╠╦╝╚═╗║╣   |   -------------------------------------   | | \n");
+    printf("| |  ╩ ╩╚═╝╩╚═╚═╝╚═╝  |   <. - - - -> | Level 01 | Chars | EASY   | | \n");
+    printf("| |  ╔═╗╔═╗╔╦╗╔═╗     |   -------------------------------------   | | \n");
+    printf("| |  ║  ║ ║ ║║║╣      |   <. . - - -> | Level 02 | Chars | HARD   | | \n");
+    printf("| |  ╚═╝╚═╝═╩╝╚═╝     |   -------------------------------------   | | \n");
+    printf("| |  ╔═╗╔═╗╔╦╗╔═╗     |   <. . . - -> | Level 03 | Words | EASY   | | \n");
+    printf("| |  ║ ╦╠═╣║║║║╣      |   -------------------------------------   | | \n");
+    printf("| |  ╚═╝╩ ╩╩ ╩╚═╝     |   <. . . . -> | Level 04 | Words | HARD   | | \n");
+    printf("| |_______________________________________________________________| | \n");
+    printf("|/_________________________________________________________________\\| \n\n");
     
 }
 
 void gameover(){
+    statistics_printout();
+    sleeplong();
     printf("\n");
     printf(" ______________________ \n");
     printf("|\\ __________________ /| \n");
@@ -450,11 +509,13 @@ void gameover(){
     printf("| |  ╔═╗╦  ╦╔═╗╦═╗   | | \n");
     printf("| |  ║ ║╚╗╔╝║╣ ╠╦╝   | | \n");
     printf("| |  ╚═╝ ╚╝ ╚═╝╩╚═   | | \n");
-    printf("| |                  | | \n");
-    printf("| |                  | | \n");
-    printf("| |                  | | \n");
+    printf("| |  ╦  ╔═╗╔═╗╔═╗╦═╗ | | \n");
+    printf("| |  ║  ║ ║╚═╗║╣ ╠╦╝ | | \n");
+    printf("| |  ╩═╝╚═╝╚═╝╚═╝╩╚═ | | \n");
     printf("| |__________________| | \n");
     printf("|/____________________\\| \n");
+    sleep();
+    main();
 }
 
 int level0(){
@@ -464,21 +525,37 @@ int level0(){
     char level3[50] = ". . . - -";
     char level4[50] = ". . . . -";
     if (strcmp(finalanswer, level1) == 0){
-         printf("\nLEVEL 1\n-------\nIn this level your task is to enter the morse code corresponding to the given character\n");
-        printf("You are given both a character and the morse equivalent below \n");
+        printf("\n -----------------------------------------------------------------------------------------\n");
+        printf("| LEVEL 1                                                                                 |");
+        printf(" -----------------------------------------------------------------------------------------\n");
+        printf("| In this level your task is to enter the morse code corresponding to the given character |\n");
+        printf("| You are given both a character and the morse equivalent below                           |\n");
+        printf(" -----------------------------------------------------------------------------------------\n");
         return 1;
     }
     else if (strcmp(finalanswer, level2) == 0){
-        printf("\nLEVEL 2\n-------\nIn this level your task is to enter the morse code corresponding to the given character\n");
+        printf("\n -----------------------------------------------------------------------------------------\n");
+        printf("| LEVEL 2                                                                                 |");
+        printf(" -----------------------------------------------------------------------------------------\n");
+        printf("| In this level your task is to enter the morse code corresponding to the given character |\n");
+        printf(" -----------------------------------------------------------------------------------------\n");
         return 2;
     }
     else if (strcmp(finalanswer, level3) == 0){
-        printf("\nLEVEL 3\n-------\nIn this level your task is to enter the morse code corresponding to the given word\n");
-        printf("You are given both a word and the morse equivalent below \n");
+        printf("\n -----------------------------------------------------------------------------------------\n");
+        printf("| LEVEL 3                                                                                 |");
+        printf(" -----------------------------------------------------------------------------------------\n");
+        printf("| In this level your task is to enter the morse code corresponding to the given word      |\n");
+        printf("| You are given both a word and the morse equivalent below                                |\n");
+        printf(" -----------------------------------------------------------------------------------------\n");
         return 3;
     }
     else if (strcmp(finalanswer, level4) == 0){
-        printf("\nLEVEL 4\n-------\nIn this level your task is to enter the morse code corresponding to the given word\n");
+        printf("\n -----------------------------------------------------------------------------------------\n");
+        printf("| LEVEL 4                                                                                 |");
+        printf(" -----------------------------------------------------------------------------------------\n");
+        printf("| In this level your task is to enter the morse code corresponding to the given word      |\n");
+        printf(" -----------------------------------------------------------------------------------------\n");
         return 4;
     }
     else {
@@ -502,42 +579,26 @@ void timeoutscreen(){
     printf("|/____________________\\| \n");
 }
 
-
-
-
-
-
-/*void chooselevel(){
-    if (answer == ".----"){
-        level1();
-    }
-    else if (answer == "..---"){
-        level2();
-    }
-    else if (answer == "...--"){
-        level3();
-    }
-    else if (answer == "....-"){
-        level4();
-    }
-    else {
-        timeoutscreen();
-        sleep_ms(5000);
-        mainscreen();
-    }
+void gamecompleted(){
+    printf(" __________________________________\n");
+    printf("|\\ _______________________________/| \n");
+    printf("| |  ╔═╗╔═╗╔╦╗╔═╗                | | \n");
+    printf("| |  ║ ╦╠═╣║║║║╣                 | | \n");
+    printf("| |  ╚═╝╩ ╩╩ ╩╚═╝                | | \n");
+    printf("| |  ╦╔═╗                        | | \n");
+    printf("| |  ║╚═╗                        | | \n"); 
+    printf("| |  ╩╚═╝                        | | \n");
+    printf("| |  ╔═╗╔═╗╔╦╗╔═╗╦  ╔═╗╔╦╗╔═╗╔╦╗ | | \n");
+    printf("| |  ║  ║ ║║║║╠═╝║  ║╣  ║ ║╣  ║║ | | \n");
+    printf("| |  ╚═╝╚═╝╩ ╩╩  ╩═╝╚═╝ ╩ ╚═╝═╩╝ | | \n");
+    printf("| |______________________________| | \n");
+    printf("|/________________________________\\| \n");
 }
-
-
-
-void stringcomparison(char input[], char question[]){
-    if (input == question){
-        rightinput();
-    }
-    else {
-        wronginput();
-    }
-}*/
 
 void sleep(){
     sleep_ms(2000);
+}
+
+void sleeplong(){
+    sleep_ms(5000);
 }
