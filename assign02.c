@@ -8,14 +8,15 @@
 #include "hardware/clocks.h"
 #include "assign02.pio.h"
 
+#define IS_RGBW true  // Will use RGBW format
 #define NUM_PIXELS 1  // There is 1 WS2812 device in the chain
 #define WS2812_PIN 28 // The GPIO pin that the WS2812 connected
 #define ARRAY_SIZE 38
 #define MAX_STRING 30
 
 
+
 // Declare the main assembly code entry point.
-int main();
 void main_asm();
 void outputChar();
 char *translate(char c);
@@ -40,6 +41,18 @@ void Level2header();
 void Level3header();
 void Level4header();
 void presstostart();
+
+// Main entry point of the application
+int main() {
+    stdio_init_all();
+    PIO pio = pio0;
+    uint offset = pio_add_program(pio, &ws2812_program);
+    ws2812_program_init(pio, 0, offset, WS2812_PIN, 800000, IS_RGBW);
+    watchdog_enabler();
+    main_asm(); 
+
+    return 0;                      // Application return code
+}
 
 void presstostart(){
     printf("press button twice to turn on game");
@@ -100,6 +113,7 @@ bool rightorwrong;
 int lives = 3;
 int count = 0; // count will be incremented/decremented if a player gets the correct answer
 char s[50];
+char b[50];
 
 static inline void put_pixel(uint32_t pixel_grb)
 {
@@ -153,7 +167,7 @@ char *level3()
 {
     watchdog_timer_reset();
     int random = rand() % (12);
-    strncpy(s, words[random], 50);
+    strncpy(b, words[random], 50);
     char *morse;
     char *trans = malloc(sizeof(char) * (MAX_STRING));
     if (trans == NULL)
@@ -161,14 +175,16 @@ char *level3()
         printf("\nError allocating memory for 'trans'\n");
     }
     trans[0] = '\0';
-    for (int i = 0; i < strlen(s); i++)
+    for (int i = 0; i < strlen(b); i++)
     {
         char c;
-        c = s[i];
+        c = b[i];
         morse = translate(c);
         char space = ' ';
-        strncat(trans, morse, 4);
+        strncat(trans, morse, 8);
         morse = translate(space);
+        strncat(trans, morse, 1);
+        strncat(trans, morse, 1);
         strncat(trans, morse, 1);
     }
     char *newTrans = malloc(sizeof(char) * (MAX_STRING));
@@ -177,19 +193,20 @@ char *level3()
         printf("\nError allocating memory for 'newTrans'\n");
     }
     newTrans[0] = '\0';
-    strncpy(newTrans, trans, strlen(trans) - 1);
-    newTrans[strlen(trans) - 1] = '\0';
-
-    printf("\nWord: %s\n", s);
-    printf("Morse equivalent of %s: %s \n", s, newTrans);
-    return newTrans;
+    strncpy(newTrans, trans, strlen(trans) - 2);
+    newTrans[strlen(trans) - 2] = '\0';
+    strncpy(s, newTrans, 50);
+    printf("%s", s);
+    printf("\nWord: %s\n", b);
+    printf("Morse equivalent of %s: %s \n", b, newTrans);
+    return s;
 }
 
 char *level4()
 {
     watchdog_timer_reset();
     int random = rand() % (12);
-    strncpy(s, words[random], 50);
+    strncpy(b, words[random], 50);
     char *morse;
     char *trans = malloc(sizeof(char) * (MAX_STRING));
     if (trans == NULL)
@@ -197,14 +214,16 @@ char *level4()
         printf("\nError allocating memory for 'trans'\n");
     }
     trans[0] = '\0';
-    for (int i = 0; i < strlen(s); i++)
+    for (int i = 0; i < strlen(b); i++)
     {
         char c;
-        c = s[i];
+        c = b[i];
         morse = translate(c);
         char space = ' ';
-        strncat(trans, morse, 4);
+        strncat(trans, morse, 8);
         morse = translate(space);
+        strncat(trans, morse, 1);
+        strncat(trans, morse, 1);
         strncat(trans, morse, 1);
     }
     char *newTrans = malloc(sizeof(char) * (MAX_STRING));
@@ -213,10 +232,11 @@ char *level4()
         printf("\nError allocating memory for 'newTrans'\n");
     }
     newTrans[0] = '\0';
-    strncpy(newTrans, trans, strlen(trans) - 1);
-    newTrans[strlen(trans) - 1] = '\0';
-
-    printf("\nWord: %s\n", s);
+    strncpy(newTrans, trans, strlen(trans) - 2);
+    newTrans[strlen(trans) - 2] = '\0';
+    strncpy(s, newTrans, 50);
+    printf("%s", s);
+    printf("\nWord: %s\n", b);
     return newTrans;
 }
 
@@ -320,6 +340,7 @@ int checkEntry()
         }
         else {
             gameover();
+            sleep_ms(1000);
             main();
         }
     }
@@ -519,14 +540,4 @@ void stringcomparison(char input[], char question[]){
 
 void sleep(){
     sleep_ms(2000);
-}
-
-// Main entry point of the application
-int main() {
-    stdio_init_all();
-    sleep_ms(5000);
-    watchdog_enabler();
-    main_asm(); 
-
-    return 0;                      // Application return code
 }
