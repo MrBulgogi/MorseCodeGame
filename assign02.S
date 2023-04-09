@@ -32,7 +32,9 @@
 .equ    DASH_TIME,   1000000            @ Specify value that should display dash
 .equ    EMPTY_TIME,  300000          @ Specify value that should display spoace
 .equ    SPASE_TIME,  1000000           @ Specify value that should check code
-.equ    ENTER_TIME,  2000000  
+.equ    ENTER_TIME, 2000000
+.equ    MIN_TIME,    100000 
+
 
 
 .equ    GPIO_ISR_OFFSET, 0x74         @ GPIO is int #13 (vector table entry 29)
@@ -58,10 +60,11 @@ Inputting0:
     beq     Inputtingover0
     b       Inputting0
 ChooseLevel:
-    bl      level0
-    b       Inputting0
+    cmp     r5, #ONE_SEC
+    bne     Inputting0
 Inputtingover0:
     ldr     r5, =ZERO_SEC
+    bl      level0
     cmp     r0, #1
     beq     Level1
     cmp     r0, #2
@@ -78,7 +81,8 @@ Inputting:
     b       Inputting
 Level1:
     bl      level1
-    b       Inputting
+    cmp     r5, #ONE_SEC
+    bne     Inputting
 Inputtingover:
     ldr     r5, =ZERO_SEC
     bl      checkEntry
@@ -95,7 +99,8 @@ Inputting2:
     b       Inputting2
 Level2:
     bl      level2
-    b       Inputting2
+    cmp     r5, #ONE_SEC
+    bne     Inputting2
 Inputtingover2:
     ldr     r5, =ZERO_SEC
     bl      checkEntry
@@ -112,7 +117,8 @@ Inputting3:
     b       Inputting3
 Level3:
     bl      level3
-    b       Inputting3
+    cmp     r5, #ONE_SEC
+    bne     Inputting3
 Inputtingover3:
     ldr     r5, =ZERO_SEC
     bl      checkEntry
@@ -129,7 +135,8 @@ Inputting4:
     b       Inputting4
 Level4:
     bl      level4
-    b       Inputting4
+    cmp     r5, #ONE_SEC
+    bne     Inputting4
 Inputtingover4:
     ldr     r5, =ZERO_SEC
     bl      checkEntry
@@ -274,12 +281,15 @@ gpiofall:
     ldr     r2, =#SPASE_TIME
     cmp     r1, r2
     blt     empty
-    ldr     r2, =#SPASE_TIME
+    ldr     r2, =#ENTER_TIME
     cmp     r1, r2
-
+    blt     spase
     b       done
     
 empty:
+    ldr     r2, =#MIN_TIME
+    cmp     r1, r2
+    blt     done
     movs    r0, #43
     bl      addtoanswer
     ldr     r0, =msgsapce
@@ -289,10 +299,8 @@ empty:
 spase:
     movs    r0, #32
     bl      addtoanswer
-    ldr     r0, =msgsapce
-    bl      printf   
-    bl      printf
-    bl      printf
+    ldr     r0, =msgplus
+    bl      printf  
     b       done 
 
        
@@ -336,6 +344,7 @@ done:
 msgdot:    .asciz "."
 msgdash:   .asciz "-"
 msgsapce:   .asciz " "
+msgplus:    .asciz "+"
 
 
 

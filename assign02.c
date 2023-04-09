@@ -15,6 +15,7 @@
 
 
 // Declare the main assembly code entry point.
+int main();
 void main_asm();
 void outputChar();
 char *translate(char c);
@@ -46,19 +47,15 @@ void presstostart(){
 
 
 void watchdog_enabler(){
-    watchdog_enable(8388, 0);
-    printf("watchdog enabled\n");
+    watchdog_enable(8000, 0);
     if (watchdog_caused_reboot()) 
     {
         timeoutscreen();
         sleep_ms(3000);
-        //printf("updating\n");
-        //printf("runs:%d\n",runs);
-        //watchdog_enable(1000,1);
-        //printf("%d\n",runs);
     } 
     else 
-    {
+    {   printf("watchdog enabled\n");
+        sleep_ms(3000);
         //printf("Clean boot\n");
     }
 }
@@ -308,6 +305,9 @@ int checkEntry()
             setLED();
         }
         count++;
+        if (count == 6){
+            count = 1;
+        }
     }
     else
     {
@@ -320,6 +320,7 @@ int checkEntry()
         }
         else {
             gameover();
+            main();
         }
     }
     printf("You have %d lives left!\n", lives);
@@ -394,7 +395,6 @@ void addtoanswer(int input){
 void printtheoutput(){
     strncpy(finalanswer, answer, 50);
     printinput();
-    level0();
     strncpy(answer, "", 50);
     printf("%s", answer);
     i = 0;
