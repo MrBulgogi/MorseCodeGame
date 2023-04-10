@@ -28,11 +28,11 @@
 .equ    ONE_SEC,     1              @ Specify value that turns the LED "off"
 .equ    TWO_SEC,     2   
 
-.equ    DOT_TIME,    300000             @ Specify value that should display dot
+.equ    DOT_TIME,    333333             @ Specify value that should display dot
 .equ    DASH_TIME,   1000000            @ Specify value that should display dash
-.equ    EMPTY_TIME,  300000          @ Specify value that should display spoace
+.equ    EMPTY_TIME,  333333          @ Specify value that should display spoace
 .equ    SPASE_TIME,  1000000           @ Specify value that should check code
-.equ    ENTER_TIME,  2000000
+.equ    ENTER_TIME,  2333333
 .equ    MIN_TIME,    100000 
 
 
