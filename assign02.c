@@ -418,11 +418,87 @@ void reset_totalstatistics(){
     correct_tracker2 = 0;
 }
 
+char morseToChar(char *M)
+{
+    int i = 0;
+    // all possible morse outputs
+    char *morse[] = {". -", "- . . .", "- . - .", "- . .", ".", ". . - .", "- - .", ". . . .", ". .", ". - - -",
+                     "- . -", ". - . .", "- -", "- .", "- - -", ". - - .", "- - . -", ". - .", ". . .", "-",
+                     ". . -", ". . . -", ". - -", "- . . -", "- . - -", "- - . .", "- - - - -", ". - - - -", ". . - - -",
+                     ". . . - -", ". . . . -", ". . . . .", "- . . . .", "- - . . .", "- - - . .", "- - - - .", " "};
+
+    for (i = 0; i <= 36; i++)
+    {
+        if (strcmp(M, morse[i]) == 0)
+        {
+            //printf("\n%s is the equivalent of %c", M, alphabet[i]);
+            return alphabet[i];
+            break;
+        }
+    }
+    //printf("?");
+    //return '?';
+}
+
+void morseToString(char *MORSE)
+{
+    char *STRING = malloc(sizeof(char) * MAX_STRING);
+    if (STRING == NULL)
+    {
+        printf("\nError allocating memory for morseToString\n");
+        return;
+    }
+    char *morse = malloc(sizeof(char) * MAX_STRING);
+    if (morse == NULL)
+    {
+        printf("\nError allocating memory for morseToString\n");
+        return;
+    }
+    STRING[0] = '\0';
+    morse[0] = '\0';
+    char c = '\0';
+    int i, j, k, z;
+    i = 0;
+    j = i;
+    k = j + 1;
+    z = k + 1;
+    while (MORSE[i] != '\0')
+    {
+        if ((MORSE[j] == ' ') && (MORSE[k] == ' ') && (MORSE[z] == ' '))
+        {
+            //morse[strlen(morse) - 1] = '\0';
+            c = morseToChar(morse);
+            char temp2[2] = {c, '\0'};
+            strncat(STRING, temp2, 2); 
+            morse[0] = '\0';
+            i = i + 2;
+            j = j + 2;
+            k = k + 2;
+            z = z + 2;
+        }
+        else
+        {
+            char temp1[2] = {MORSE[i], '\0'};
+            strncat(morse, temp1, 2);
+    
+        }
+        i++;
+        j++;
+        k++;
+        z++;
+    }
+//    morse[strlen(morse) - 1] = '\0';
+    c = morseToChar(morse);
+    char temp2[2] = {c, '\0'};
+    strncat(STRING, temp2, 2); 
+    printf("\nFinal Anser | MORSE: %s | STRING/CHAR:%s\n", MORSE, STRING);
+}
+
 
 
 
 void printinput(){
-    printf("\nFINAL ANSWER:%s\n", finalanswer);
+    morseToString(finalanswer);
 }
 
 void Level2header(){
@@ -596,13 +672,9 @@ void gamecompleted(){
 }
 
 void sleep(){
-    watchdog_timer_reset();
     sleep_ms(2000);
-    watchdog_timer_reset();
 }
 
 void sleeplong(){
-    watchdog_timer_reset();
     sleep_ms(5000);
-    watchdog_timer_reset();
 }
