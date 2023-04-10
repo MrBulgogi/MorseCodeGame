@@ -596,9 +596,13 @@ void gamecompleted(){
 }
 
 void sleep(){
+    watchdog_timer_reset();
     sleep_ms(2000);
+    watchdog_timer_reset();
 }
 
 void sleeplong(){
+    watchdog_timer_reset();
     sleep_ms(5000);
+    watchdog_timer_reset();
 }
