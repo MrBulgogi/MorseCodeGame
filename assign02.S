@@ -32,7 +32,7 @@
 .equ    DASH_TIME,   1000000            @ Specify value that should display dash
 .equ    EMPTY_TIME,  300000          @ Specify value that should display spoace
 .equ    SPASE_TIME,  1000000           @ Specify value that should check code
-.equ    ENTER_TIME, 2000000
+.equ    ENTER_TIME,  2000000
 .equ    MIN_TIME,    100000 
 
 
@@ -90,6 +90,9 @@ Inputtingover:
     beq     next1
     b       Level1
 next1:
+    bl      statistics_printout
+    bl      reset_levelstatistics
+    bl      sleeplong
     bl      Level2header
     b       Level2
 
@@ -108,6 +111,9 @@ Inputtingover2:
     beq     next2
     b       Level2
 next2:
+    bl      statistics_printout
+    bl      reset_levelstatistics
+    bl      sleeplong
     bl      Level3header
     b       Level3
 
@@ -126,6 +132,9 @@ Inputtingover3:
     beq     next3
     b       Level3
 next3:
+    bl      statistics_printout
+    bl      reset_levelstatistics
+    bl      sleeplong
     bl      Level4header
     b       Level4
 
@@ -143,13 +152,15 @@ Inputtingover4:
     cmp     r0, #1
     beq     GameFinished
     b       Level4
-ResetGame:
 
 GameFinished:
-    bl      gameover
+    bl      statistics_printout
+    bl      reset_levelstatistics
+    bl      reset_totalstatistics
+    bl      sleeplong
+    bl      gamecompleted
+    bl      sleep
     b       main_asm          
-
-GameOver:
 
 
 
@@ -344,7 +355,7 @@ done:
 msgdot:    .asciz "."
 msgdash:   .asciz "-"
 msgsapce:   .asciz " "
-msgplus:    .asciz "+"
+msgplus:    .asciz "   "
 
 
 
