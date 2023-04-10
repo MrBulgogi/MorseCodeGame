@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -228,6 +227,7 @@ char *level4()
         morse = translate(space);
         strncat(trans, morse, 1);
         strncat(trans, morse, 1);
+        strncat(trans, morse, 1);
     }
     char *newTrans = malloc(sizeof(char) * (MAX_STRING));
     if (newTrans == NULL)
@@ -235,10 +235,12 @@ char *level4()
         printf("\nError allocating memory for 'newTrans'\n");
     }
     newTrans[0] = '\0';
-    strncpy(newTrans, trans, strlen(trans) - 2);
-    newTrans[strlen(trans) - 2] = '\0';
+    strncpy(newTrans, trans, strlen(trans) - 3);
+    newTrans[strlen(trans) - 3] = '\0';
 
     printf("\nWord: %s\n", s);
+    strcpy(s, newTrans);
+    s[strlen(newTrans)] = '\0';
     return newTrans;
 }
 
@@ -267,6 +269,7 @@ void setLED()
     }
 }
 
+// converts a morse string to its corresponding character
 char morseToChar(char *M)
 {
     int i = 0;
@@ -276,17 +279,74 @@ char morseToChar(char *M)
                      ". . -", ". . . -", ". - -", "- . . -", "- . - -", "- - . .", "- - - - -", ". - - - -", ". . - - -",
                      ". . . - -", ". . . . -", ". . . . .", "- . . . .", "- - . . .", "- - - . .", "- - - - .", " "};
 
-    for (i = 0; i < 36; i++)
+    for (i = 0; i <= 36; i++)
     {
         if (strcmp(M, morse[i]) == 0)
         {
+            //printf("\n%s is the equivalent of %c", M, alphabet[i]);
+            return alphabet[i];
             break;
         }
     }
-    printf("\n%s is the equivalent of %c", M, alphabet[i]);
-    return alphabet[i];
+    //printf("?");
+    //return '?';
 }
 
+void morseToString(char *MORSE)
+{
+    char *STRING = malloc(sizeof(char) * MAX_STRING);
+    if (STRING == NULL)
+    {
+        printf("\nError allocating memory for morseToString\n");
+        return;
+    }
+    char *morse = malloc(sizeof(char) * MAX_STRING);
+    if (morse == NULL)
+    {
+        printf("\nError allocating memory for morseToString\n");
+        return;
+    }
+    STRING[0] = '\0';
+    morse[0] = '\0';
+    char c = '\0';
+    int i, j, k, z;
+    i = 0;
+    j = i;
+    k = j + 1;
+    z = k + 1;
+    while (MORSE[i] != '\0')
+    {
+        if ((MORSE[j] == ' ') && (MORSE[k] == ' ') && (MORSE[z] == ' '))
+        {
+            //morse[strlen(morse) - 1] = '\0';
+            c = morseToChar(morse);
+            char temp2[2] = {c, '\0'};
+            strncat(STRING, temp2, 2); 
+            morse[0] = '\0';
+            i = i + 2;
+            j = j + 2;
+            k = k + 2;
+            z = z + 2;
+        }
+        else
+        {
+            char temp1[2] = {MORSE[i], '\0'};
+            strncat(morse, temp1, 2);
+    
+        }
+        i++;
+        j++;
+        k++;
+        z++;
+    }
+//    morse[strlen(morse) - 1] = '\0';
+    c = morseToChar(morse);
+    char temp2[2] = {c, '\0'};
+    strncat(STRING, temp2, 2); 
+    printf("\n%s is the equivalent of %s\n", MORSE, STRING);
+}
+
+// translates a character to morse
 char *translate(char C)
 {
     int i = 0;
@@ -335,6 +395,7 @@ char *translate(char C)
     }
 }
 
+// compare the given answer with the correct answer
 int checkEntry()
 {
     if (strcmp(s, finalanswer) == 0)
@@ -533,12 +594,14 @@ int main()
 {
     stdio_init_all();
     // Initialise the PIO interface with the WS2812 code
-    PIO pio = pio0;
-    uint offset = pio_add_program(pio, &ws2812_program);
-    ws2812_program_init(pio, 0, offset, WS2812_PIN, 800000, IS_RGBW);
-    sleep_ms(5000);
-    watchdog_enabler();
-    main_asm();
+    // PIO pio = pio0;
+    // uint offset = pio_add_program(pio, &ws2812_program);
+    // ws2812_program_init(pio, 0, offset, WS2812_PIN, 800000, IS_RGBW);
+    // sleep_ms(5000);
+    // watchdog_enabler();
+    // main_asm();
+    char *M = "- . . . .   . - -   - . .";
+    morseToString(M);
 
     // level3();
 
