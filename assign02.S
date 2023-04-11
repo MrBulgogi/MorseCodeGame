@@ -145,6 +145,7 @@ Level4:
     bl      level4
     cmp     r5, #ONE_SEC
     bne     Inputting4
+    b       Level4
 Inputtingover4:
     ldr     r5, =ZERO_SEC
     bl      checkEntry

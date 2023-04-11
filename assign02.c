@@ -53,7 +53,16 @@ void watchdog_enabler()
     watchdog_enable(8000, 0);
     if (watchdog_caused_reboot())
     {
+<<<<<<< Updated upstream
         timeoutscreen();
+=======
+        timeoutscreen();  //prints a timeout screen if the watchdog was activate
+        printf("game starting in 3 seconds");
+        sleep_ms(3000);   //sleeps for 3 seconds so the programme doesnt start immediately after
+    } 
+    else 
+    {   printf("watchdog enableded\n");       //print watchdog enabled for when we call it
+>>>>>>> Stashed changes
         sleep_ms(3000);
     }
     else
@@ -549,11 +558,34 @@ void timeoutscreen()
     printf("|/____________________\\| \n");
 }
 
+<<<<<<< Updated upstream
 void sleep()
 {
-    sleep_ms(2000);
+=======
+void gamecompleted(){
+    printf(" __________________________________\n");
+    printf("|\\ _______________________________/| \n");
+    printf("| |  ╔═╗╔═╗╔╦╗╔═╗                | | \n");
+    printf("| |  ║ ╦╠═╣║║║║╣                 | | \n");
+    printf("| |  ╚═╝╩ ╩╩ ╩╚═╝                | | \n");
+    printf("| |  ╦╔═╗                        | | \n");
+    printf("| |  ║╚═╗                        | | \n"); 
+    printf("| |  ╩╚═╝                        | | \n");
+    printf("| |  ╔═╗╔═╗╔╦╗╔═╗╦  ╔═╗╔╦╗╔═╗╔╦╗ | | \n");
+    printf("| |  ║  ║ ║║║║╠═╝║  ║╣  ║ ║╣  ║║ | | \n");
+    printf("| |  ╚═╝╚═╝╩ ╩╩  ╩═╝╚═╝ ╩ ╚═╝═╩╝ | | \n");
+    printf("| |______________________________| | \n");
+    printf("|/________________________________\\| \n");
 }
 
+void sleep(){
+    watchdog_timer_reset();
+>>>>>>> Stashed changes
+    sleep_ms(2000);
+    watchdog_timer_reset();
+}
+
+<<<<<<< Updated upstream
 // Main entry point of the application
 int main()
 {
@@ -570,3 +602,10 @@ int main()
 
     return 0; // Application return code
 }
+=======
+void sleeplong(){
+    watchdog_timer_reset();
+    sleep_ms(5000);
+    watchdog_timer_reset();
+}
+>>>>>>> Stashed changes
