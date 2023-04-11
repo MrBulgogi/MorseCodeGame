@@ -1,4 +1,3 @@
-
 #include "hardware/regs/addressmap.h"
 #include "hardware/regs/io_bank0.h"
 #include "hardware/regs/timer.h"
@@ -29,11 +28,11 @@
 .equ    ONE_SEC,     1              @ Specify value that turns the LED "off"
 .equ    TWO_SEC,     2   
 
-.equ    DOT_TIME,    300000             @ Specify value that should display dot
+.equ    DOT_TIME,    333333             @ Specify value that should display dot
 .equ    DASH_TIME,   1000000            @ Specify value that should display dash
-.equ    EMPTY_TIME,  300000          @ Specify value that should display spoace
+.equ    EMPTY_TIME,  333333          @ Specify value that should display spoace
 .equ    SPASE_TIME,  1000000           @ Specify value that should check code
-.equ    ENTER_TIME, 2000000
+.equ    ENTER_TIME,  2333333
 .equ    MIN_TIME,    100000 
 
 
@@ -92,7 +91,8 @@ Inputtingover:
     b       Level1
 next1:
     bl      statistics_printout
-    bl      reset_statisics
+    bl      reset_levelstatistics
+    bl      sleeplong
     bl      Level2header
     b       Level2
 
@@ -112,7 +112,8 @@ Inputtingover2:
     b       Level2
 next2:
     bl      statistics_printout
-    bl      reset_statisics
+    bl      reset_levelstatistics
+    bl      sleeplong
     bl      Level3header
     b       Level3
 
@@ -132,12 +133,12 @@ Inputtingover3:
     b       Level3
 next3:
     bl      statistics_printout
-    bl      reset_statisics
+    bl      reset_levelstatistics
+    bl      sleeplong
     bl      Level4header
     b       Level4
 
 Inputting4:
-    bl      clearAnswer
     cmp     r5, ONE_SEC
     beq     Inputtingover4
     b       Inputting4
@@ -152,15 +153,15 @@ Inputtingover4:
     cmp     r0, #1
     beq     GameFinished
     b       Level4
-ResetGame:
 
 GameFinished:
     bl      statistics_printout
-    bl      reset_statisics
-    bl      gameover
+    bl      reset_levelstatistics
+    bl      reset_totalstatistics
+    bl      sleeplong
+    bl      gamecompleted
+    bl      sleep
     b       main_asm          
-
-GameOver:
 
 
 
@@ -355,11 +356,10 @@ done:
 msgdot:    .asciz "."
 msgdash:   .asciz "-"
 msgsapce:   .asciz " "
-msgplus:    .asciz "+"
+msgplus:    .asciz "   "
 
 
 
 .data
 lstate: .word   DFLT_STATE_STRT
 ltimer: .word   DFLT_ALARM_TIME
-
