@@ -59,6 +59,7 @@ Homescreen:
 Inputting0:                             
     cmp     r5, ONE_SEC                 @comparing r5 with 1, if r5 is zero user has not entered
     beq     Inputtingover0              @go to onputtingover if r5 is 1
+    bl      watchdog_timer_reset
     b       Inputting0                  @else loop back to inputting0
 @user is choosing level/level0
 ChooseLevel:                            
