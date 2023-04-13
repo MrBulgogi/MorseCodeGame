@@ -42,125 +42,147 @@
 
 @ Entry point to the ASM portion of the program
 main_asm:
-    bl      init_gpio_led                               @Initialise the GPIO LED pin                            @ Install each of the GPIO buttons
-    bl      init_gpio_en                         @Install the SVC interrupt service routine
-    bl      install_alrm_isr
-    bl      install_gpio_isr
-Homescreen:
-    bl      homescreen
-    bl      setLED
-    bl      sleep
-    ldr     r4, =#3
-    ldr     r5, =#0
-    bl      alarm
-    b       ChooseLevel
+    bl      init_gpio_led               @Initialise the GPIO LED pin                          
+    bl      init_gpio_en                @Initialise the gpoip button
+    bl      install_alrm_isr            @Initialise the alarm interput
+    bl      install_gpio_isr            @Initialise the gpio interupt
+Homescreen: 
+    bl      homescreen                  @call hoemscreen fucntion from c and display
+    bl      setLED                      @set the RGB to default state
+    bl      sleep                       @call sleep function from C sleep for 2 seconds
+    ldr     r4, =#3                     @initiate register 4 as 3
+    ldr     r5, =#0                     @initiate register 5 as 0
+    bl      alarm                       @start the alrm routine
+    b       ChooseLevel                 @go to ChooseLevel
     
-Inputting0:
-    cmp     r5, ONE_SEC
-    beq     Inputtingover0
-    b       Inputting0
-ChooseLevel:
-    cmp     r5, #ONE_SEC
-    bne     Inputting0
-Inputtingover0:
-    ldr     r5, =ZERO_SEC
-    bl      level0
-    cmp     r0, #1
-    beq     Level1
-    cmp     r0, #2
-    beq     Level2
-    cmp     r0, #3
-    beq     Level3
-    cmp     r0, #4
-    beq     Level4
-    b       ChooseLevel
+@waiting for user to enter input
+Inputting0:                             
+    cmp     r5, ONE_SEC                 @comparing r5 with 1, if r5 is zero user has not entered
+    beq     Inputtingover0              @go to onputtingover if r5 is 1
+    b       Inputting0                  @else loop back to inputting0
+@user is choosing level/level0
+ChooseLevel:                            
+    cmp     r5, #ONE_SEC                @compare register 5 with 1
+    bne     Inputting0                  @if not equal user is still choosing level 
+    b       ChooseLevel                 @if register 5 is 1 then wait for it to go low, as this is from previous enter
+@user has entered an answer
+Inputtingover0:                         
+    ldr     r5, =ZERO_SEC               @reset register 5 back to 0 for next enter
+    bl      level0                      @call level0 function from c which returns number for levels.
+    cmp     r0, #1                      @cmp returned number with 1
+    beq     Level1                      @if equal start the level1 routine
+    cmp     r0, #2                      @cmp returned number with 2
+    beq     Level2                      @if equal start the level2 routine
+    cmp     r0, #3                      @cmp returned number with 3
+    beq     Level3                      @if equal start the level3 routine
+    cmp     r0, #4                      @cmp returned number with 4
+    beq     Level4                      @if equal start the level4 routine
+    b       ChooseLevel                 @if none go back to choose level
 
+@user is still inputting answer
 Inputting:
-    cmp     r5, ONE_SEC
-    beq     Inputtingover
-    b       Inputting
+    cmp     r5, ONE_SEC                 @compare register 5 with 1              
+    beq     Inputtingover               @if equal then user has finished entering answer
+    b       Inputting                   @if not then keep looping till answer is entered
+@Level 1 routine
 Level1:
-    bl      level1
-    cmp     r5, #ONE_SEC
-    bne     Inputting
+    bl      level1                      @call level1 function from c which procs a question for level1
+    cmp     r5, #ONE_SEC                @compare register 5 with 1 
+    bne     Inputting                   @if not equal then user is still entering answer
+    b       Level1                      @if register 5 is 1 then wait for it to go low, as this is from previous enter
+@user has entered final answer
 Inputtingover:
-    ldr     r5, =ZERO_SEC
-    bl      checkEntry
-    cmp     r0, #1
-    beq     next1
-    b       Level1
+    ldr     r5, =ZERO_SEC               @reset register 5 back to 0 for next enter
+    bl      checkEntry                  @call C function to check if user answer is right or wrong
+    cmp     r0, #1                      @ funtion return 1 if user has 5 correc tin a row, compare
+    beq     next1                       @if this is equal, go to next1 routine
+    b       Level1                      @else go back to Level1
+@user has completed the level
 next1:
-    bl      statistics_printout
-    bl      reset_levelstatistics
-    bl      sleeplong
-    bl      Level2header
-    b       Level2
+    bl      statistics_printout         @if level1 is complete, call C function toprint statistics
+    bl      reset_levelstatistics       @call C function to reset the statistics per level
+    bl      sleeplong                   @call sleep long which sleeps for 5 seconds so user can view stats
+    bl      Level2header                @call C function to print the level 2 header
+    b       Level2                      @go to the level 2 routine
 
+@user is still inputting answer
 Inputting2:
-    cmp     r5, ONE_SEC
-    beq     Inputtingover2
-    b       Inputting2
+    cmp     r5, ONE_SEC                 @compare register 5 with 1     
+    beq     Inputtingover2              @if equal then user has finished entering answer
+    b       Inputting2                  @if not then keep looping till answer is entered
+@Level 2 routine
 Level2:
-    bl      level2
-    cmp     r5, #ONE_SEC
-    bne     Inputting2
+    bl      level2                      @call level2 function from c which procs a question for level2
+    cmp     r5, #ONE_SEC                @compare register 5 with 1 
+    bne     Inputting2                  @if not equal then user is still entering answer
+    b       Level2                      @if register 5 is 1 then wait for it to go low, as this is from previous enter
+@user has entered final answer
 Inputtingover2:
-    ldr     r5, =ZERO_SEC
-    bl      checkEntry
-    cmp     r0, #1
-    beq     next2
-    b       Level2
+    ldr     r5, =ZERO_SEC               @reset register 5 back to 0 for next enter
+    bl      checkEntry                  @call C function to check if user answer is right or wrong
+    cmp     r0, #1                      @ funtion return 1 if user has 5 correc tin a row, compare
+    beq     next2                       @if this is equal, go to next2 routine
+    b       Level2                      @else go back to Level2
 next2:
-    bl      statistics_printout
-    bl      reset_levelstatistics
-    bl      sleeplong
-    bl      Level3header
-    b       Level3
+    bl      statistics_printout         @if level2 is complete, call C function toprint statistics
+    bl      reset_levelstatistics       @call C function to reset the statistics per level
+    bl      sleeplong                   @call sleep long which sleeps for 5 seconds so user can view stats
+    bl      Level3header                @call C function to print the level 3 header
+    b       Level3                      @go to the level 3 routine
 
+@user is still inputting answer
 Inputting3:
-    cmp     r5, ONE_SEC
-    beq     Inputtingover3
-    b       Inputting3
+    cmp     r5, ONE_SEC                 @compare register 5 with 1     
+    beq     Inputtingover3              @if equal then user has finished entering answer
+    b       Inputting3                  @if not then keep looping till answer is entered
+@Level 3 routine
 Level3:
-    bl      level3
-    cmp     r5, #ONE_SEC
-    bne     Inputting3
+    bl      level3                      @call level3 function from c which procs a question for level3
+    cmp     r5, #ONE_SEC                @compare register 5 with 1 
+    bne     Inputting3                  @if not equal then user is still entering answer
+    b       Level3                      @if register 5 is 1 then wait for it to go low, as this is from previous enter
+@user has entered final answer
 Inputtingover3:
-    ldr     r5, =ZERO_SEC
-    bl      checkEntry
-    cmp     r0, #1
-    beq     next3
-    b       Level3
+    ldr     r5, =ZERO_SEC               @reset register 5 back to 0 for next enter
+    bl      checkEntry                  @call C function to check if user answer is right or wrong
+    cmp     r0, #1                      @ funtion return 1 if user has 5 correc tin a row, compare
+    beq     next3                       @if this is equal, go to next3 routine
+    b       Level3                      @else go back to Level3
 next3:
-    bl      statistics_printout
-    bl      reset_levelstatistics
-    bl      sleeplong
-    bl      Level4header
-    b       Level4
+    bl      statistics_printout         @if level3 is complete, call C function toprint statistics
+    bl      reset_levelstatistics       @call C function to reset the statistics per level
+    bl      sleeplong                   @call sleep long which sleeps for 5 seconds so user can view stats
+    bl      Level4header                @call C function to print the level 4 header
+    b       Level4                      @go to the level 4 routine
 
+@user is still inputting answer
 Inputting4:
-    cmp     r5, ONE_SEC
-    beq     Inputtingover4
-    b       Inputting4
+    cmp     r5, ONE_SEC                 @compare register 5 with 1     
+    beq     Inputtingover4              @if equal then user has finished entering answer
+    b       Inputting4                  @if not then keep looping till answer is entered
+@Level 4 routine
 Level4:
-    bl      level4
-    cmp     r5, #ONE_SEC
-    bne     Inputting4
+    bl      level4                      @call level4 function from c which procs a question for level4
+    cmp     r5, #ONE_SEC                @compare register 5 with 1 
+    bne     Inputting4                  @if not equal then user is still entering answer
+    b       Level4                      @if register 5 is 1 then wait for it to go low, as this is from previous enter
+@user has entered final answer
 Inputtingover4:
-    ldr     r5, =ZERO_SEC
-    bl      checkEntry
-    cmp     r0, #1
-    beq     GameFinished
-    b       Level4
+    ldr     r5, =ZERO_SEC               @reset register 5 back to 0 for next enter
+    bl      checkEntry                  @call C function to check if user answer is right or wrong
+    cmp     r0, #1                      @ funtion return 1 if user has 5 correc tin a row, compare
+    beq     GameFinished                @if this is equal, go to GameFinished routine
+    b       Level4                      @else go back to Level4
 
+@User has completed the game routine
 GameFinished:
-    bl      statistics_printout
-    bl      reset_levelstatistics
-    bl      reset_totalstatistics
-    bl      sleeplong
-    bl      gamecompleted
-    bl      sleep
-    b       main_asm          
+    bl      statistics_printout         @if game is complete, call C function toprint statistics
+    bl      reset_levelstatistics       @call C function to reset the statistics per level
+    bl      reset_totalstatistics       @call C function to reset the statistics for whole game
+    bl      sleeplong                   @call sleep long which sleeps for 5 seconds so user can view stats
+    bl      gamecompleted               @call C function which display game completed screen
+    bl      sleep                       @call slep which sleeps for 2 seconds
+    b       main_asm                    @loop
 
 
 
@@ -228,18 +250,18 @@ alrm_isr:
     push    {lr}                                        @pushes return address to stack
     ldr     r2, =(TIMER_BASE + TIMER_INTR_OFFSET)       @loads offset of timer raw interupt
     ldr     r1, =#0x1                                   @ <TODO – add comment>
-    str     r1, [r2]    @update the state of the LED  
+    str     r1, [r2]                                    
     cmp     r7, #ONE_SEC
     beq     alrm_done   
-    ldr     r5, =ZERO_SEC       
-    ldr     r1, =ONE_SEC
-    adds    r4, r4, r1   
+    ldr     r5, =ZERO_SEC                               @lds 0 into r5 so next question doesnt print
+    ldr     r1, =ONE_SEC                                
+    adds    r4, r4, r1                                  @Increments r4 so that when it reaches 2 it will enter user answer
     cmp     r4, #TWO_SEC  
     beq     dashproc    
     bl      alrm_done
-dashproc:                @ storing the correct value into the register to disable interupt
-    bl      printtheoutput     @update the state of the LED
-    ldr     r5, =#1                             @call the alarm routine
+dashproc:                                               @ storing the correct value into the register to disable interupt
+    bl      printtheoutput                              @prints the user output if twos seconds go past with no interupts
+    ldr     r5, =#1                                     @movs 1 into r5 so can move to next question
 alrm_done:
     bl      alarm
     pop     {pc}                                        @exiting the fucntion
@@ -268,31 +290,29 @@ gpio_isr:
     ldr     r0, [r2]                                                @stores correct value to init
     ldr     r1, =0x2000
     str     r1, [r2]                                                
-    //ldr     r2, = (TIMER_BASE + TIMER_INTE_OFFSET)                  @ stores correct value to enable the interupt
-    //str     r1, [r2]    
     bl      watchdog_timer_reset 
-    ldr     r1, =(GPIO_BTN_FALL_MSK)                                  @ loads value of falling edge for dwn btn and compares to interupt
+    ldr     r1, =(GPIO_BTN_FALL_MSK)                                @ loads value of falling edge for btn and compares to interupt
     cmp     r0, r1
-    beq     gpiofall                                                @if its equal enter the down routine
-    ldr     r2, =(GPIO_BTN_RISE_MSK)                                  @loads value of falling edge for up btn and compares to interupt
+    beq     gpiofall                                                @if its equal enter the fall routine
+    ldr     r2, =(GPIO_BTN_RISE_MSK)                                @loads value of rising edge for btn and compares to interupt
     cmp     r0, r2
-    beq     gpiorise                                                 @if its equal enter the up routine                                             @if its equal enter the engage routine
+    beq     gpiorise                                                @if its equal enter the rise routine                                             @if its equal enter the engage routine
     b       done                                                    @ else exit
 
 gpiofall:
     ldr     r2, =(IO_BANK0_BASE + IO_BANK0_INTR2_OFFSET)            @disables pending interupt by writing falling edge value to raw offset     
     ldr     r1, =#GPIO_BTN_FALL_MSK                                   
     str     r1,[r2]  
-    ldr     r2, =(TIMER_BASE + 0x28) 
+    ldr     r2, =(TIMER_BASE + 0x28)                                @reads 1st 32 bits of TIME 
     ldr     r1, [r2]
-    ldr     r7, =#ONE_SEC
+    ldr     r7, =#ONE_SEC                                           @moves 1 into r7 so we know that button is being preseed
     subs    r1, r6
-    ldr     r2, =(TIMER_BASE + 0x28)
+    ldr     r2, =(TIMER_BASE + 0x28)                                @reads 1st 32 bits of TIME and stores in r6 for rising interupt
     ldr     r6, [r2]
-    ldr     r2, =#SPASE_TIME
+    ldr     r2, =#SPASE_TIME                                        @comapres with 1s and goes to empty if its smaller
     cmp     r1, r2
     blt     empty
-    ldr     r2, =#ENTER_TIME
+    ldr     r2, =#ENTER_TIME                                        @comapres with 2.33s and goes to space if its smaller
     cmp     r1, r2
     blt     spase
     b       done
