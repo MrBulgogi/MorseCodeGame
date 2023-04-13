@@ -7,12 +7,13 @@
 .cpu    cortex-m0plus
 .thumb
 .global main_asm
+.global Homescreen
 .global level0
 .align  4
 
 
 .equ    DFLT_STATE_STRT, 1            @ Specify the value to start flashing
-.equ    DFLT_STATE_STOP, 0            @ Specify the value to stop flashing
+.equ    DFLT_STATE_STOP, 0              @ Specify the value to stop flashing
 .equ    DFLT_ALARM_TIME, 1000000      @ Specify the default ALARM timeout
 
 
@@ -46,6 +47,7 @@ main_asm:
     bl      init_gpio_en                @Initialise the gpoip button
     bl      install_alrm_isr            @Initialise the alarm interput
     bl      install_gpio_isr            @Initialise the gpio interupt
+    bl      init_watchdog
 Homescreen: 
     bl      homescreen                  @call hoemscreen fucntion from c and display
     bl      setLED                      @set the RGB to default state
@@ -57,18 +59,18 @@ Homescreen:
     
 @waiting for user to enter input
 Inputting0:                             
-    cmp     r5, ONE_SEC                 @comparing r5 with 1, if r5 is zero user has not entered
+    cmp     r5, #1                      @comparing r5 with 1, if r5 is zero user has not entered
     beq     Inputtingover0              @go to onputtingover if r5 is 1
-    bl      watchdog_timer_reset
     b       Inputting0                  @else loop back to inputting0
 @user is choosing level/level0
 ChooseLevel:                            
-    cmp     r5, #ONE_SEC                @compare register 5 with 1
+    cmp     r5, #1                      @compare register 5 with 1
     bne     Inputting0                  @if not equal user is still choosing level 
     b       ChooseLevel                 @if register 5 is 1 then wait for it to go low, as this is from previous enter
 @user has entered an answer
 Inputtingover0:                         
-    ldr     r5, =ZERO_SEC               @reset register 5 back to 0 for next enter
+    BL      watchdog_enabler            @enable the watchdog timer
+    ldr     r5, =#ZERO_SEC              @reset register 5 back to 0 for next enter
     bl      level0                      @call level0 function from c which returns number for levels.
     cmp     r0, #1                      @cmp returned number with 1
     beq     Level1                      @if equal start the level1 routine
@@ -78,11 +80,18 @@ Inputtingover0:
     beq     Level3                      @if equal start the level3 routine
     cmp     r0, #4                      @cmp returned number with 4
     beq     Level4                      @if equal start the level4 routine
+    cmp     r0, #0
+    beq     nomatch
     b       ChooseLevel                 @if none go back to choose level
+
+nomatch:
+    ldr     r0, =msgagain
+    bl      printf
+    b       ChooseLevel
 
 @user is still inputting answer
 Inputting:
-    cmp     r5, ONE_SEC                 @compare register 5 with 1              
+    cmp     r5, #ONE_SEC                 @compare register 5 with 1              
     beq     Inputtingover               @if equal then user has finished entering answer
     b       Inputting                   @if not then keep looping till answer is entered
 @Level 1 routine
@@ -93,7 +102,7 @@ Level1:
     b       Level1                      @if register 5 is 1 then wait for it to go low, as this is from previous enter
 @user has entered final answer
 Inputtingover:
-    ldr     r5, =ZERO_SEC               @reset register 5 back to 0 for next enter
+    ldr     r5, =#ZERO_SEC               @reset register 5 back to 0 for next enter
     bl      checkEntry                  @call C function to check if user answer is right or wrong
     cmp     r0, #1                      @ funtion return 1 if user has 5 correc tin a row, compare
     beq     next1                       @if this is equal, go to next1 routine
@@ -108,7 +117,7 @@ next1:
 
 @user is still inputting answer
 Inputting2:
-    cmp     r5, ONE_SEC                 @compare register 5 with 1     
+    cmp     r5, #ONE_SEC                 @compare register 5 with 1     
     beq     Inputtingover2              @if equal then user has finished entering answer
     b       Inputting2                  @if not then keep looping till answer is entered
 @Level 2 routine
@@ -119,7 +128,7 @@ Level2:
     b       Level2                      @if register 5 is 1 then wait for it to go low, as this is from previous enter
 @user has entered final answer
 Inputtingover2:
-    ldr     r5, =ZERO_SEC               @reset register 5 back to 0 for next enter
+    ldr     r5, =#ZERO_SEC               @reset register 5 back to 0 for next enter
     bl      checkEntry                  @call C function to check if user answer is right or wrong
     cmp     r0, #1                      @ funtion return 1 if user has 5 correc tin a row, compare
     beq     next2                       @if this is equal, go to next2 routine
@@ -133,7 +142,7 @@ next2:
 
 @user is still inputting answer
 Inputting3:
-    cmp     r5, ONE_SEC                 @compare register 5 with 1     
+    cmp     r5, #ONE_SEC                 @compare register 5 with 1     
     beq     Inputtingover3              @if equal then user has finished entering answer
     b       Inputting3                  @if not then keep looping till answer is entered
 @Level 3 routine
@@ -144,7 +153,7 @@ Level3:
     b       Level3                      @if register 5 is 1 then wait for it to go low, as this is from previous enter
 @user has entered final answer
 Inputtingover3:
-    ldr     r5, =ZERO_SEC               @reset register 5 back to 0 for next enter
+    ldr     r5, =#ZERO_SEC               @reset register 5 back to 0 for next enter
     bl      checkEntry                  @call C function to check if user answer is right or wrong
     cmp     r0, #1                      @ funtion return 1 if user has 5 correc tin a row, compare
     beq     next3                       @if this is equal, go to next3 routine
@@ -158,7 +167,7 @@ next3:
 
 @user is still inputting answer
 Inputting4:
-    cmp     r5, ONE_SEC                 @compare register 5 with 1     
+    cmp     r5, #ONE_SEC                 @compare register 5 with 1     
     beq     Inputtingover4              @if equal then user has finished entering answer
     b       Inputting4                  @if not then keep looping till answer is entered
 @Level 4 routine
@@ -169,7 +178,7 @@ Level4:
     b       Level4                      @if register 5 is 1 then wait for it to go low, as this is from previous enter
 @user has entered final answer
 Inputtingover4:
-    ldr     r5, =ZERO_SEC               @reset register 5 back to 0 for next enter
+    ldr     r5, =#ZERO_SEC               @reset register 5 back to 0 for next enter
     bl      checkEntry                  @call C function to check if user answer is right or wrong
     cmp     r0, #1                      @ funtion return 1 if user has 5 correc tin a row, compare
     beq     GameFinished                @if this is equal, go to GameFinished routine
@@ -190,7 +199,12 @@ GameFinished:
 
 
 
-
+init_watchdog:
+    push    {lr}
+    ldr     r1, =(WATCHDOG_BASE + 0x04)
+    movs    r0, #0xffffff 
+    str     r0, [r1]
+    pop     {pc}
 
 @ Subroutine used to initialise the PI Pico built-in LED
 init_gpio_led:
@@ -377,6 +391,7 @@ msgdot:    .asciz "."
 msgdash:   .asciz "-"
 msgsapce:   .asciz " "
 msgplus:    .asciz "   "
+msgagain:    .asciz "No Match, Try Again"
 
 
 

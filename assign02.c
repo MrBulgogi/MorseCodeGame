@@ -22,6 +22,7 @@
 // Declare the all the functions so they can be called whenever in the code
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void main_asm();
+void Homescreen();
 void outputChar();
 char *translate(char c);
 int checkEntry();
@@ -48,6 +49,7 @@ void reset_levelstatistics();
 void reset_totalstatistics();
 void sleep();
 void sleeplong();
+void clearAnswer();
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // global arrays for words and letters so we can get the morse in the code
@@ -81,7 +83,6 @@ int main() {
     PIO pio = pio0;
     uint offset = pio_add_program(pio, &ws2812_program);
     ws2812_program_init(pio, 0, offset, WS2812_PIN, 800000, IS_RGBW);
-    watchdog_enabler();
     main_asm(); 
 
     return 0;                      // Application return code
@@ -101,13 +102,13 @@ void watchdog_enabler(){
     watchdog_enable(8000, 0);
     if (watchdog_caused_reboot()) 
     {
-        timeoutscreen();  //prints a timeout screen if the watchdog was activate
-        printf("game starting in 3 seconds");
+        printf("watchdog enabled\n"); 
         sleep_ms(3000);   //sleeps for 3 seconds so the programme doesnt start immediately after
     } 
     else 
-    {   printf("watchdog enabled\n");       //print watchdog enabled for when we call it
-        sleep_ms(3000);
+    {         //print watchdog enabled for when we call it
+        printf("watchdog enabled\n"); 
+        sleep_ms(3000);   //sleeps for 3 seconds so the programme doesnt start immediately after
     }
 }
 //resets timer of watchdog,
@@ -206,6 +207,7 @@ void setLED()
  */
 char *level1()
 {
+    clearAnswer();
     watchdog_timer_reset();
     int random = rand() % (ARRAY_SIZE - 1);
     char c = alphabet[random];
@@ -219,6 +221,7 @@ char *level1()
  */
 char *level2()
 {
+    clearAnswer();
     watchdog_timer_reset();
     int random = rand() % (ARRAY_SIZE - 1);
     char c = alphabet[random];
@@ -508,6 +511,7 @@ int checkEntry()
         else
         {
             deaths++;
+            lives = 3;
             gameover();
         }
     }
@@ -517,6 +521,7 @@ int checkEntry()
     strncpy(s, "", 50);
     if (count == 5)
     {
+        lives = 3;
         return 1;
     }
     else
@@ -581,15 +586,15 @@ void statistics_printout(){
     printf(" ______________________ \n");
     printf("|\\ __________________ /| \n");
     printf("| | Level Statistics | |\n");
-    printf("| | Attempts:%d      | |\n",attempt_tracker);
-    printf("| | Correct:%d       | |\n",correct_tracker);
-    printf("| |Accuracy:%.2f%%   | |\n", accuracy);
+    printf("| | Attempts:%d       | |\n",attempt_tracker);
+    printf("| | Correct:%d        | |\n",correct_tracker);
+    printf("| | Accuracy:%.2f%%   | |\n", accuracy);
     printf("| |__________________| | \n");
     printf("| | Player Overall   | |\n");
-    printf("| | Attempts:%d      | |\n",attempt_tracker2);
-    printf("| | Deaths:%d        | |\n",deaths);
-    printf("| | Correct:%d       | |\n",correct_tracker2);
-    printf("| | Accuracy:%.2f%%  | |\n", accuracy2);
+    printf("| | Attempts:%d       | |\n",attempt_tracker2);
+    printf("| | Deaths:%d         | |\n",deaths);
+    printf("| | Correct:%d        | |\n",correct_tracker2);
+    printf("| | Accuracy:%.2f%%   | |\n", accuracy2);
     printf("| |__________________| | \n");
     printf("|/____________________\\| \n");
 }
@@ -644,6 +649,7 @@ void homescreen(){
  * @return return values 1-4 for each level if called
  */
 int level0(){
+    clearAnswer();
     watchdog_timer_reset();
     char level1[50] = ". - - - -";
     char level2[50] = ". . - - -";
@@ -742,6 +748,7 @@ void timeoutscreen(){
     printf("| |  ╚╩╝╩╚═╚═╝╝╚╝╚═╝ | | \n");
     printf("| |__________________| | \n");
     printf("|/____________________\\| \n");
+    clearAnswer();
 }
 /**
  * @brief Game completed screen printout so user knows they have finished the game
@@ -784,7 +791,7 @@ void gameover(){
     printf("| |__________________| | \n");
     printf("|/____________________\\| \n");
     sleep();
-    main();
+    Homescreen();
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -795,9 +802,13 @@ void gameover(){
  *        watchdog is called so the game doesn't reset if sleep is used
  */
 void sleep(){
+    watchdog_timer_reset();
     sleep_ms(2000);
+    watchdog_timer_reset();
 }
 
 void sleeplong(){
+    watchdog_timer_reset();
     sleep_ms(5000);
+    watchdog_timer_reset();
 }
