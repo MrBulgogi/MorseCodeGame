@@ -75,7 +75,7 @@ int main() {
     PIO pio = pio0;
     uint offset = pio_add_program(pio, &ws2812_program);
     ws2812_program_init(pio, 0, offset, WS2812_PIN, 800000, IS_RGBW);
-    watchdog_enabler();
+    //watchdog_enabler();
     main_asm(); 
 
     return 0;                      // Application return code
@@ -88,12 +88,12 @@ void watchdog_enabler(){
     if (watchdog_caused_reboot()) 
     {
         timeoutscreen();  //prints a timeout screen if the watchdog was activate
-        printf("game starting in 3 seconds");
-        sleep_ms(3000);   //sleeps for 3 seconds so the programme doesnt start immediately after
+        printf("watchdog enableded\n");
+        //sleep_ms(3000);   //sleeps for 3 seconds so the programme doesnt start immediately after
     } 
     else 
     {   printf("watchdog enableded\n");       //print watchdog enabled for when we call it
-        sleep_ms(3000);
+        //sleep_ms(3000);
         //printf("Clean boot\n");
     }
 }
@@ -590,8 +590,7 @@ void gameover(){
     printf("| |  ╩═╝╚═╝╚═╝╚═╝╩╚═ | | \n");
     printf("| |__________________| | \n");
     printf("|/____________________\\| \n");
-    sleep();
-    main();
+    sleep_ms(8000);
 }
 
 int level0(){

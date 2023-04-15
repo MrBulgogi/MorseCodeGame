@@ -46,12 +46,16 @@ main_asm:
     bl      init_gpio_en                         @Install the SVC interrupt service routine
     bl      install_alrm_isr
     bl      install_gpio_isr
+    ldr     r1, =(WATCHDOG_BASE + 0x04)
+    ldr     r0, =#0xffffff 
+    str     r0, [r1]
+    bl      watchdog_enabler
 Homescreen:
     bl      homescreen
     bl      setLED
     bl      sleep
     ldr     r4, =#3
-    ldr     r5, =#0
+    ldr     r5, =ZERO_SEC
     bl      alarm
     b       ChooseLevel
     
@@ -62,6 +66,7 @@ Inputting0:
 ChooseLevel:
     cmp     r5, #ONE_SEC
     bne     Inputting0
+    b       Inputting0
 Inputtingover0:
     ldr     r5, =ZERO_SEC
     bl      level0
@@ -73,6 +78,7 @@ Inputtingover0:
     beq     Level3
     cmp     r0, #4
     beq     Level4
+    ldr     r5, =ZERO_SEC
     b       ChooseLevel
 
 Inputting:
