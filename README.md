@@ -1,5 +1,17 @@
 # CSU23021-GRP36
 
+## GIT
+
+git checkout *branch* = switch to branch. 
+Example:
+
+git pull *URL*
+git checkout creagh
+*make changes*
+git commit *
+git push
+
+This will push back to your own branch. 
 
 
 ## Getting started
